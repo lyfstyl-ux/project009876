@@ -158,7 +158,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <span className="font-semibold text-foreground">{stats?.totalCoins || 0}</span>
                   </div>
                   <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/30 border border-border/50">
-                    <TrendingUpIcon className="h-3.5 w-3.5 text-green-500" />
+                    <TrendingUp className="h-3.5 w-3.5 text-green-500" />
                     <span className="text-muted-foreground">MC:</span>
                     <span className="font-semibold text-foreground">$0</span>
                   </div>

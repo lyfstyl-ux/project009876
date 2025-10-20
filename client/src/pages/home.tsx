@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp, Music, Palette, Gamepad2, Code, Shirt, Dumbbell, GraduationCap, Tv, Globe, ChevronLeft, ChevronRight, Coins } from "lucide-react";
 import type { User } from "@shared/schema";
 import { useState, useMemo, useRef } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import TradeModalDesktop from "@/components/trade-modal-desktop";
+import TradeModalMobile from "@/components/trade-modal-mobile";
 
 export default function Home() {
   const { data: trendingCreators, isLoading } = useQuery<User[]>({
@@ -17,6 +20,13 @@ export default function Home() {
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [coinMarketCaps, setCoinMarketCaps] = useState<Record<string, string>>({});
+  const [coinVolumes, setCoinVolumes] = useState<Record<string, string>>({});
+  const [coinHolders, setCoinHolders] = useState<Record<string, number>>({});
+  const [selectedCoin, setSelectedCoin] = useState<Coin | null>(null);
+  const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
+  const isMobile = useIsMobile();
+
 
   const categories = [
     { id: "all", label: "All", Icon: Globe },
@@ -135,6 +145,16 @@ export default function Home() {
     }
   };
 
+  const openTradeModal = (coin: Coin) => {
+    setSelectedCoin(coin);
+    setIsTradeModalOpen(true);
+  };
+
+  const closeTradeModal = () => {
+    setSelectedCoin(null);
+    setIsTradeModalOpen(false);
+  };
+
   return (
     <div className="container max-w-5xl mx-auto px-4 py-8 space-y-12">
       {/* Category Chips */}
@@ -199,7 +219,7 @@ export default function Home() {
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
           {mockCoins.map((coin) => (
-            <CoinCard key={coin.id} coin={coin} />
+            <CoinCard key={coin.id} coin={coin} onClick={() => openTradeModal(coin)} />
           ))}
         </div>
       </section>
@@ -266,6 +286,22 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {selectedCoin && (
+        isMobile ? (
+          <TradeModalMobile
+            isOpen={isTradeModalOpen}
+            onClose={closeTradeModal}
+            coin={selectedCoin}
+          />
+        ) : (
+          <TradeModalDesktop
+            isOpen={isTradeModalOpen}
+            onClose={closeTradeModal}
+            coin={selectedCoin}
+          />
+        )
+      )}
     </div>
   );
 }
