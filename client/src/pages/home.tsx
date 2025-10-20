@@ -21,12 +21,12 @@ import {
   PenTool,
   Heart,
 } from "lucide-react";
-import { 
-  SiYoutube, 
-  SiTiktok, 
-  SiInstagram, 
-  SiMedium, 
-  SiX 
+import {
+  SiYoutube,
+  SiTiktok,
+  SiInstagram,
+  SiMedium,
+  SiX,
 } from "react-icons/si";
 import type { User } from "@shared/schema";
 import { useState, useMemo, useRef } from "react";
@@ -136,7 +136,9 @@ export default function Home() {
     },
   ];
 
-  const { data: trendingCreators = mockTrendingCreators, isLoading } = useQuery<User[]>({
+  const { data: trendingCreators = mockTrendingCreators, isLoading } = useQuery<
+    User[]
+  >({
     queryKey: ["/api/creators/trending"],
     initialData: mockTrendingCreators,
   });
@@ -169,17 +171,17 @@ export default function Home() {
   // Custom icon components for platforms not in lucide-react
   const FarcasterIcon = ({ className }: { className?: string }) => (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20.5 4h-17A1.5 1.5 0 002 5.5v13A1.5 1.5 0 003.5 20h17a1.5 1.5 0 001.5-1.5v-13A1.5 1.5 0 0020.5 4zm-8.53 11.94c-2.11 0-3.82-1.71-3.82-3.82s1.71-3.82 3.82-3.82 3.82 1.71 3.82 3.82-1.71 3.82-3.82 3.82z"/>
+      <path d="M20.5 4h-17A1.5 1.5 0 002 5.5v13A1.5 1.5 0 003.5 20h17a1.5 1.5 0 001.5-1.5v-13A1.5 1.5 0 0020.5 4zm-8.53 11.94c-2.11 0-3.82-1.71-3.82-3.82s1.71-3.82 3.82-3.82 3.82 1.71 3.82 3.82-1.71 3.82-3.82 3.82z" />
     </svg>
   );
-  
+
   const GitcoinIcon = ({ className }: { className?: string }) => (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/>
-      <path d="M12 6c-3.309 0-6 2.691-6 6s2.691 6 6 6 6-2.691 6-6-2.691-6-6-6zm0 10c-2.206 0-4-1.794-4-4s1.794-4 4-4 4 1.794 4 4-1.794 4-4 4z"/>
+      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z" />
+      <path d="M12 6c-3.309 0-6 2.691-6 6s2.691 6 6 6 6-2.691 6-6-2.691-6-6-6zm0 10c-2.206 0-4-1.794-4-4s1.794-4 4-4 4 1.794 4 4-1.794 4-4 4z" />
     </svg>
   );
-  
+
   const KarmaIcon = ({ className }: { className?: string }) => (
     <Heart className={className} />
   );
@@ -202,13 +204,15 @@ export default function Home() {
   // Transform Zora coins data to match our Coin type
   const zoraCoins: Coin[] = useMemo(() => {
     if (!zoraCoinsData?.coins) return [];
-    
+
     return zoraCoinsData.coins.map((coin: any) => ({
       id: coin.id || coin.address,
       name: coin.name || "Unnamed Coin",
       symbol: coin.symbol || "???",
       address: coin.address,
-      image: coin.mediaContent?.previewImage?.medium || coin.mediaContent?.previewImage?.small,
+      image:
+        coin.mediaContent?.previewImage?.medium ||
+        coin.mediaContent?.previewImage?.small,
       marketCap: coin.marketCap ? parseFloat(coin.marketCap).toFixed(2) : "0",
       volume24h: coin.volume24h ? parseFloat(coin.volume24h).toFixed(2) : "0",
       holders: coin.uniqueHolders || 0,
@@ -257,7 +261,10 @@ export default function Home() {
         {isLoading ? (
           <div className="flex gap-5 overflow-x-auto scrollbar-hide pb-3">
             {[...Array(10)].map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-2.5 flex-shrink-0">
+              <div
+                key={i}
+                className="flex flex-col items-center gap-2.5 flex-shrink-0"
+              >
                 <div className="h-20 w-20 rounded-full bg-muted animate-pulse" />
                 <div className="h-3 w-16 bg-muted rounded animate-pulse" />
               </div>
@@ -324,8 +331,8 @@ export default function Home() {
       <section className="space-y-6" data-tour="trending-coins">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <Coins className="h-6 w-6 text-primary" />
-            <h2 className="text-2xl font-bold">Trending Coins from Zora</h2>
+            <Coins className="h-4 w-4 text-primary" />
+            <h2 className="text-1xl font-bold">Trending</h2>
           </div>
           <Button variant="ghost" size="sm" data-testid="button-view-all-coins">
             View All
@@ -360,8 +367,6 @@ export default function Home() {
           </div>
         )}
       </section>
-
-      
 
       {selectedCoin &&
         (isMobile ? (
