@@ -19,7 +19,7 @@ export function TopCreatorsStories({
   return (
     <div
       className={cn(
-        "flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2",
+        "flex gap-3 overflow-x-auto scrollbar-hide pb-2 justify-center",
         className,
       )}
     >
@@ -31,7 +31,7 @@ export function TopCreatorsStories({
           <Link
             key={creator.id}
             href={`/profile/${creator.id}`}
-            className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
+            className="flex flex-col items-center gap-1.5 flex-shrink-0 group cursor-pointer"
             data-testid={`link-story-creator-${creator.id}`}
           >
             <div className="relative">

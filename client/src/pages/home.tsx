@@ -257,9 +257,9 @@ export default function Home() {
     <div className="container max-w-5xl mx-auto px-4 py-8 space-y-12">
       {/* Instagram Stories Section */}
       <section className="space-y-3">
-        <h2 className="text-base font-semibold text-foreground">Top Creators</h2>
+        <h2 className="text-base font-semibold text-foreground text-center">Top Creators</h2>
         {isLoading ? (
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 justify-center">
             {[...Array(10)].map((_, i) => (
               <div
                 key={i}
@@ -293,7 +293,7 @@ export default function Home() {
         {/* Category Chips */}
         <div
           ref={scrollContainerRef}
-          className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide pb-2"
+          className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide pb-2 justify-center"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {categories.map((category) => {
