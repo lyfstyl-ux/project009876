@@ -56,14 +56,6 @@ export default function Search() {
 
   return (
     <div className="container max-w-5xl mx-auto px-4 py-8 space-y-8">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Search Creators</h1>
-        <p className="text-muted-foreground">
-          Discover and connect with creators in the Web3 ecosystem
-        </p>
-      </div>
-
       {/* Search Bar */}
       <div className="relative">
         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />

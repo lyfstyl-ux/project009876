@@ -81,15 +81,6 @@ export default function Creators() {
     <div className="container max-w-5xl mx-auto px-4 py-8 space-y-8">
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">
-              Top <span className="text-primary">Creators</span>
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Discover the most successful content creators on CoinIT.
-            </p>
-          </div>
-
           <div className="flex flex-wrap gap-4 sm:gap-6 text-left lg:text-right">
             <div className="text-center lg:text-right">
               <div className="text-lg sm:text-xl font-bold text-foreground">
