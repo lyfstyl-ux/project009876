@@ -58,21 +58,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <div className="flex w-full h-screen">
         {/* Desktop Sidebar */}
-        <Sidebar className="hidden md:flex w-64">
-          <SidebarHeader className="border-b border-sidebar-border">
-            <Link href="/" className="flex items-center px-2 py-1">
-              <h1 className="text-xl font-bold tracking-tight group-data-[collapsible=icon]:hidden">
+        <Sidebar className="hidden md:flex" collapsible="icon">
+          <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
+            <Link href="/" className="flex items-center">
+              <h1 className="text-lg font-bold tracking-tight group-data-[collapsible=icon]:hidden">
                 creatorland<span className="text-primary">*</span>
               </h1>
-              <span className="hidden group-data-[collapsible=icon]:block text-2xl font-bold text-primary">
+              <span className="hidden group-data-[collapsible=icon]:block text-xl font-bold text-primary">
                 *
               </span>
             </Link>
           </SidebarHeader>
-          <SidebarContent>
+          <SidebarContent className="px-2 py-4">
             <SidebarGroup>
-              <SidebarGroupContent className="px-2">
-                <SidebarMenu>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-1">
                   {navItems
                     .filter(item => !item.requireAuth || authenticated)
                     .map((item) => {
@@ -83,11 +83,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                             asChild
                             isActive={isActive}
                             tooltip={item.label}
-                            className="w-full justify-start"
+                            className="w-full justify-start py-2"
                           >
                             <Link href={item.path} data-testid={item.testId} className="flex items-center gap-3">
-                              <span className="text-xl shrink-0">{item.emoji}</span>
-                              <span className="flex-1">{item.label}</span>
+                              <span className="text-lg shrink-0">{item.emoji}</span>
+                              <span className="flex-1 group-data-[collapsible=icon]:hidden">{item.label}</span>
                             </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -97,10 +97,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            <SidebarGroup>
-              <SidebarGroupLabel className="px-2">More</SidebarGroupLabel>
-              <SidebarGroupContent className="px-2">
-                <SidebarMenu>
+            <SidebarGroup className="mt-4">
+              <SidebarGroupLabel className="px-2 text-xs uppercase tracking-wider group-data-[collapsible=icon]:hidden">More</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-1">
                   {secondaryNavItems
                     .filter(item => !item.requireAuth || authenticated)
                     .map((item) => {
@@ -111,11 +111,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                             asChild
                             isActive={isActive}
                             tooltip={item.label}
-                            className="w-full justify-start"
+                            className="w-full justify-start py-2"
                           >
                             <Link href={item.path} className="flex items-center gap-3">
-                              <span className="text-xl shrink-0">{item.emoji}</span>
-                              <span className="flex-1">{item.label}</span>
+                              <span className="text-lg shrink-0">{item.emoji}</span>
+                              <span className="flex-1 group-data-[collapsible=icon]:hidden">{item.label}</span>
                             </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -125,10 +125,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            <SidebarGroup>
-              <SidebarGroupLabel className="px-2">Resources</SidebarGroupLabel>
-              <SidebarGroupContent className="px-2">
-                <SidebarMenu>
+            <SidebarGroup className="mt-4">
+              <SidebarGroupLabel className="px-2 text-xs uppercase tracking-wider group-data-[collapsible=icon]:hidden">Resources</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-1">
                   {resourceItems.map((item) => {
                     const isActive = location === item.path;
                     return (
@@ -137,11 +137,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                           asChild
                           isActive={isActive}
                           tooltip={item.label}
-                          className="w-full justify-start"
+                          className="w-full justify-start py-2"
                         >
                           <Link href={item.path} className="flex items-center gap-3">
-                            <span className="text-xl shrink-0">{item.emoji}</span>
-                            <span className="flex-1">{item.label}</span>
+                            <span className="text-lg shrink-0">{item.emoji}</span>
+                            <span className="flex-1 group-data-[collapsible=icon]:hidden">{item.label}</span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>

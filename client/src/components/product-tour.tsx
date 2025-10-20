@@ -36,7 +36,31 @@ export function ProductTour({ onComplete }: ProductTourProps) {
       disableBeacon: true,
     },
     {
-      target: "[data-tour='trending-creators']",
+      target: "[data-testid='button-category-all']",
+      content: (
+        <div className="space-y-2">
+          <h3 className="text-lg font-bold">Filter by Category</h3>
+          <p className="text-sm text-muted-foreground">
+            Browse creators and coins by category. Click on any category to filter the content.
+          </p>
+        </div>
+      ),
+      placement: "bottom",
+    },
+    {
+      target: "[data-testid='button-view-all-coins']",
+      content: (
+        <div className="space-y-2">
+          <h3 className="text-lg font-bold">Trending Coins</h3>
+          <p className="text-sm text-muted-foreground">
+            Click on any coin to view details and start trading. Support your favorite creators by buying their coins!
+          </p>
+        </div>
+      ),
+      placement: "left",
+    },
+    {
+      target: "[data-testid='button-view-all-creators']",
       content: (
         <div className="space-y-2">
           <h3 className="text-lg font-bold">Discover Top Creators</h3>
@@ -45,22 +69,10 @@ export function ProductTour({ onComplete }: ProductTourProps) {
           </p>
         </div>
       ),
-      placement: "bottom",
+      placement: "left",
     },
     {
-      target: "[data-tour='trending-coins']",
-      content: (
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold">Trade Creator Coins</h3>
-          <p className="text-sm text-muted-foreground">
-            Click on any coin to view details and start trading. Support your favorite creators by buying their coins!
-          </p>
-        </div>
-      ),
-      placement: "top",
-    },
-    {
-      target: "[data-tour='nav-create']",
+      target: "[data-testid='nav-create']",
       content: (
         <div className="space-y-2">
           <h3 className="text-lg font-bold">Create Your Own Coin</h3>
@@ -69,39 +81,27 @@ export function ProductTour({ onComplete }: ProductTourProps) {
           </p>
         </div>
       ),
-      placement: "bottom",
+      placement: "right",
     },
     {
-      target: "[data-tour='nav-streaks']",
+      target: "[data-testid='header-search']",
       content: (
         <div className="space-y-2">
-          <h3 className="text-lg font-bold">Daily Streaks & E1XP Points</h3>
+          <h3 className="text-lg font-bold">Search Everything</h3>
           <p className="text-sm text-muted-foreground">
-            Login daily to maintain your streak and earn E1XP points. The more consistent you are, the more rewards you get!
+            Find creators, coins, and projects quickly using the search bar.
           </p>
         </div>
       ),
       placement: "bottom",
     },
     {
-      target: "[data-tour='notification-bell']",
-      content: (
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold">Stay Updated</h3>
-          <p className="text-sm text-muted-foreground">
-            Get instant notifications for trades, new followers, daily streaks, and more. Never miss important updates!
-          </p>
-        </div>
-      ),
-      placement: "bottom",
-    },
-    {
-      target: "[data-tour='user-menu']",
+      target: "[data-testid='button-login']",
       content: (
         <div className="space-y-2">
           <h3 className="text-lg font-bold">Your Profile</h3>
           <p className="text-sm text-muted-foreground">
-            Access your profile, view your coins, check your E1XP points, and manage your account settings here.
+            Login to access your profile, view your coins, check your E1XP points, and manage your account settings.
           </p>
         </div>
       ),

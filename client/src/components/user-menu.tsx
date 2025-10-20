@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useLocation } from "wouter";
@@ -18,15 +17,23 @@ export function UserMenu() {
   const { login, logout, authenticated, user } = usePrivy();
   const [, setLocation] = useLocation();
 
+  const handleLogin = () => {
+    try {
+      login();
+    } catch (error) {
+      console.error("Login error:", error);
+    }
+  };
+
   if (!authenticated) {
     return (
-      <Button onClick={login} variant="default" size="sm">
+      <Button onClick={handleLogin} variant="default" size="sm" data-testid="button-login">
         Login
       </Button>
     );
   }
 
-  const displayName = user?.wallet?.address 
+  const displayName = user?.wallet?.address
     ? `${user.wallet.address.slice(0, 6)}...${user.wallet.address.slice(-4)}`
     : "User";
 
