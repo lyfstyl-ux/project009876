@@ -19,6 +19,8 @@ import Streaks from "@/pages/streaks";
 import Admin from "@/pages/admin";
 import Creators from "@/pages/creators";
 import CoinsPage from "@/pages/coins";
+import Docs from "@/pages/docs";
+import FAQ from "@/pages/faq";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -37,6 +39,8 @@ function Router() {
         <Route path="/admin" component={Admin} />
         <Route path="/creators" component={Creators} />
         <Route path="/coins" component={CoinsPage} />
+        <Route path="/docs" component={Docs} />
+        <Route path="/faq" component={FAQ} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

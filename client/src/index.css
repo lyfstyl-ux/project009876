@@ -267,6 +267,18 @@
   body {
     @apply antialiased bg-background text-foreground;
     font-family: 'Poppins Rounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    overflow-y: scroll;
+  }
+
+  /* Hide scrollbar globally */
+  ::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+  }
+
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 }
 

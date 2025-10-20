@@ -2,8 +2,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, User, Coins } from "lucide-react";
 import { useState, useEffect } from "react";
-import { createAvatar } from "@dicebear/core";
-import { avataaars } from "@dicebear/collection";
 import { cn } from "@/lib/utils";
 import { getCoin } from "@zoralabs/coins-sdk";
 import { base } from "viem/chains";
@@ -33,6 +31,7 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
   const [liveVolume, setLiveVolume] = useState<string | null>(null);
   const [liveHolders, setLiveHolders] = useState<number | null>(null);
   const [coinImage, setCoinImage] = useState<string | null>(null);
+  const [creatorAvatar, setCreatorAvatar] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchCoinData() {
@@ -74,6 +73,11 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
             const previewImage = coinData.mediaContent.previewImage as any;
             setCoinImage(previewImage.medium || previewImage.small || null);
           }
+
+          // Creator avatar from Zora
+          if (coinData.creator?.avatar) {
+            setCreatorAvatar(coinData.creator.avatar);
+          }
         }
       } catch (error) {
         console.error("Error fetching Zora coin data:", error);
@@ -109,11 +113,11 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
 
         {coin.category && coin.category.toLowerCase() === "zora" && (
           <div className="absolute top-1.5 right-1.5 z-10">
-            <div className="w-5 h-5 rounded-full overflow-hidden bg-black/80 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-5 h-5 rounded-full overflow-hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-0.5">
               <img
-                src="/d7cf07e6-73fb-496a-a3c5-edacaa9f4375.png"
+                src="/client/d7cf07e6-73fb-496a-a3c5-edacaa9f4375.png"
                 alt="Zora"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
           </div>
@@ -144,16 +148,15 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
               {coin.symbol}
             </p>
           </div>
-          <div className="flex items-center gap-1 ml-1">
-            <img
-              src={createAvatar(avataaars, {
-                seed: coin.creator || "default",
-                size: 14,
-              }).toDataUri()}
-              alt="Creator avatar"
-              className="w-3.5 h-3.5 rounded-full object-cover"
-            />
-          </div>
+          {creatorAvatar && (
+            <div className="flex items-center gap-1 ml-1">
+              <img
+                src={creatorAvatar}
+                alt="Creator avatar"
+                className="w-3.5 h-3.5 rounded-full object-cover"
+              />
+            </div>
+          )}
         </div>
 
         {/* Stats */}
