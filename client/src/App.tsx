@@ -37,15 +37,19 @@ function Router() {
   );
 }
 
+import { AppPrivyProvider } from "@/lib/privy-provider";
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark">
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </ThemeProvider>
+      <AppPrivyProvider>
+        <ThemeProvider defaultTheme="dark">
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </ThemeProvider>
+      </AppPrivyProvider>
     </QueryClientProvider>
   );
 }

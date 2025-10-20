@@ -8,8 +8,32 @@ import * as schema from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { Router } from "express";
 
+// Privy auth middleware
+const privyAuth = async (req: any, res: any, next: any) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      req.user = null;
+      return next();
+    }
+
+    // In production, verify the Privy JWT token here
+    // For now, we'll extract the user from the token payload
+    const token = authHeader.replace('Bearer ', '');
+    // TODO: Verify with Privy's public key
+    req.user = { id: getMockCurrentUserId() }; // Temporary mock
+    next();
+  } catch (error) {
+    req.user = null;
+    next();
+  }
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const router = Router();
+  
+  // Apply auth middleware to all routes
+  router.use(privyAuth);
 
   // ========== USERS ==========
 

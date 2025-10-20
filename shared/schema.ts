@@ -48,29 +48,22 @@ export const projects = pgTable("projects", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Coins table - minted creator tokens via Zora
+// Coins table - from Supabase schema (tokenized assets)
 export const coins = pgTable("coins", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  projectId: varchar("project_id").references(() => projects.id),
-  contractAddress: text("contract_address").notNull(),
-  tokenId: text("token_id"),
-  chainId: integer("chain_id").default(8453), // Base mainnet
   name: text("name").notNull(),
-  symbol: text("symbol"),
-  totalSupply: decimal("total_supply", { precision: 18, scale: 8 }),
-  currentPrice: decimal("current_price", { precision: 18, scale: 8 }),
-  marketCap: decimal("market_cap", { precision: 18, scale: 8 }),
-  volume24h: decimal("volume_24h", { precision: 18, scale: 8 }),
-  priceChange24h: decimal("price_change_24h", { precision: 10, scale: 2 }),
-  creatorEarnings: decimal("creator_earnings", { precision: 18, scale: 8 }).default("0"),
-  platformFees: decimal("platform_fees", { precision: 18, scale: 8 }).default("0"),
-  metadata: jsonb("metadata").$type<{
-    description?: string;
-    image?: string;
-    external_url?: string;
-  }>(),
-  mintedAt: timestamp("minted_at").defaultNow(),
+  symbol: text("symbol").notNull(),
+  address: text("address"),
+  creator_wallet: text("creator_wallet").notNull(),
+  status: text("status").notNull().default("pending"),
+  scraped_content_id: varchar("scraped_content_id").references(() => scrapedContent.id),
+  ipfs_uri: text("ipfs_uri"),
+  ipfsUri: text("ipfs_uri"),
+  chain_id: text("chain_id"),
+  registry_tx_hash: text("registry_tx_hash"),
+  metadata_hash: text("metadata_hash"),
+  registered_at: timestamp("registered_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Transactions table - trading history
@@ -179,6 +172,10 @@ export const coinsRelations = relations(coins, ({ one, many }) => ({
     references: [users.id],
   }),
   transactions: many(transactions),
+  scrapedContent: one(scrapedContent, {
+    fields: [coins.scraped_content_id],
+    relationName: "coinContent",
+  }),
 }));
 
 export const messagesRelations = relations(messages, ({ one }) => ({
@@ -241,11 +238,10 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   isMinted: true,
 });
 
-export const insertCoinSchema = createInsertSchema(coins).omit({
-  id: true,
-  mintedAt: true,
-  creatorEarnings: true,
-  platformFees: true,
+export const insertCoinSchema = createInsertSchema(coins, {
+  name: z.string().min(1, "Coin name is required"),
+  symbol: z.string().min(1, "Symbol is required"),
+  status: z.enum(["pending", "active", "minted"]).default("pending"),
 });
 
 export const insertMessageSchema = createInsertSchema(messages).omit({
