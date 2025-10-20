@@ -69,7 +69,7 @@ export default function Profile() {
   const createdCoins = useMemo(() => {
     if (!address) return [];
     return coins.filter(coin =>
-      coin.creator_wallet && coin.creator_wallet.toLowerCase() === address.toLowerCase()
+      coin.creatorWallet && coin.creatorWallet.toLowerCase() === address.toLowerCase()
     );
   }, [coins, address]);
 
@@ -103,8 +103,8 @@ export default function Profile() {
           if (coin.address && coin.status === 'active') {
             try {
               const coinData = await getCoin({
-                collectionAddress: coin.address as `0x${string}`,
-                chainId: base.id,
+                address: coin.address as `0x${string}`,
+                chain: base,
               });
 
               const tokenData = coinData.data?.zora20Token;
@@ -257,7 +257,7 @@ export default function Profile() {
     if (!address) return;
 
     try {
-      let creator = creatorData;
+      let creator: any = creatorData;
 
       if (!creator) {
         const createResponse = await apiRequest('POST', '/api/creators', {
@@ -470,15 +470,7 @@ export default function Profile() {
             {displayedCoins.map((coin) => (
               <CoinCard
                 key={coin.id}
-                coin={{
-                  ...coin,
-                  createdAt: typeof coin.createdAt === 'string'
-                    ? coin.createdAt
-                    : coin.createdAt
-                      ? coin.createdAt.toISOString()
-                      : new Date().toISOString(),
-                  ipfsUri: coin.ipfsUri ?? undefined
-                }}
+                coin={coin}
                 isOwnCoin={true}
               />
             ))}
