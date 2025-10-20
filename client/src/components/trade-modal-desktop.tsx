@@ -74,6 +74,7 @@ export default function TradeModalDesktop({ coin, open, onOpenChange }: TradeMod
   const [currentSlide, setCurrentSlide] = useState(0);
   const [carouselApi, setCarouselApi] = useState<any>(null);
   const [copiedAddress, setCopiedAddress] = useState(false);
+  const [currentPrice, setCurrentPrice] = useState<string | null>(null);
 
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
@@ -147,15 +148,38 @@ export default function TradeModalDesktop({ coin, open, onOpenChange }: TradeMod
 
         const coinData = response.data?.zora20Token;
         if (coinData) {
+          // Market Cap
           if (coinData.marketCap !== null && coinData.marketCap !== undefined) {
             const mcValue = typeof coinData.marketCap === 'string' ? parseFloat(coinData.marketCap) : coinData.marketCap;
             setMarketCap(mcValue.toFixed(2));
           }
+          
+          // Volume 24h
           if (coinData.volume24h !== null && coinData.volume24h !== undefined) {
             const volValue = typeof coinData.volume24h === 'string' ? parseFloat(coinData.volume24h) : coinData.volume24h;
             setVolume24h(volValue.toString());
             setCreatorEarnings((volValue * 0.005).toString());
           }
+          
+          // Total Supply
+          if (coinData.totalSupply) {
+            setTotalSupply(coinData.totalSupply);
+          }
+          
+          // Current Price
+          if (coinData.price) {
+            setCurrentPrice(coinData.price);
+          }
+          
+          // Price Change 24h
+          if (coinData.priceChange24h !== null && coinData.priceChange24h !== undefined) {
+            const priceChangeValue = typeof coinData.priceChange24h === 'string' 
+              ? parseFloat(coinData.priceChange24h) 
+              : coinData.priceChange24h;
+            setPriceChange(priceChangeValue);
+          }
+          
+          // Coin Image
           if (coinData.mediaContent?.previewImage) {
             const previewImage = coinData.mediaContent.previewImage as any;
             setCoinImage(previewImage.medium || previewImage.small || null);

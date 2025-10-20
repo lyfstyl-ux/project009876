@@ -7,36 +7,56 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Format currency values with smart precision:
- * - For values >= $0.01: show 2 decimal places
- * - For values < $0.01 but > 0: show up to 8 significant digits
- * - For zero: show $0.00
+ * - For values >= $1B: show in Billions (e.g., $1.23B)
+ * - For values >= $1M: show in Millions (e.g., $4.56M)
+ * - For values >= $1K: show in Thousands (e.g., $7.89K)
+ * - For values < $1K: show 2 decimal places (e.g., $123.45)
  */
 export function formatSmartCurrency(value: number | string | null | undefined): string {
   // Handle null, undefined, or non-numeric values
   if (value == null || value === '') return "$0.00";
-  
+
   // Convert string to number if needed
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
-  
+
   // Handle NaN or invalid numbers
   if (isNaN(numValue)) return "$0.00";
-  
-  if (numValue === 0) return "$0.00";
-  
-  // For very small values (< $0.01), show more precision
-  if (numValue < 0.01) {
-    // Format with enough precision to capture the value
-    const formatted = numValue.toFixed(8);
-    // Remove trailing zeros but keep at least one significant digit visible
-    const trimmed = formatted.replace(/\.?0+$/, '');
-    // If the value is so small it would round to 0, show it with scientific notation context
-    if (parseFloat(trimmed) === 0) {
-      // For extremely tiny values, show at least 8 decimals
-      return `$${formatted}`;
-    }
-    return `$${trimmed}`;
+
+  if (numValue >= 1_000_000_000) {
+    return `$${(numValue / 1_000_000_000).toFixed(2)}B`;
   }
-  
-  // For normal values, use 2 decimal places
+  if (numValue >= 1_000_000) {
+    return `$${(numValue / 1_000_000).toFixed(2)}M`;
+  }
+  if (numValue >= 1_000) {
+    return `$${(numValue / 1_000).toFixed(2)}K`;
+  }
   return `$${numValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// Format Zora coin supply with proper decimals
+export function formatCoinSupply(supply: string | number): string {
+  const supplyNum = typeof supply === 'string' ? parseFloat(supply) : supply;
+  if (supplyNum >= 1_000_000_000) {
+    return `${(supplyNum / 1_000_000_000).toFixed(2)}B`;
+  }
+  if (supplyNum >= 1_000_000) {
+    return `${(supplyNum / 1_000_000).toFixed(2)}M`;
+  }
+  if (supplyNum >= 1_000) {
+    return `${(supplyNum / 1_000).toFixed(2)}K`;
+  }
+  return supplyNum.toFixed(2);
+}
+
+// Format price change percentage
+export function formatPriceChange(change: number): string {
+  const prefix = change >= 0 ? '+' : '';
+  return `${prefix}${change.toFixed(2)}%`;
+}
+
+// Parse Zora token amount (considering 18 decimals)
+export function parseZoraTokenAmount(amount: string): string {
+  const value = parseFloat(amount) / Math.pow(10, 18);
+  return value.toFixed(6);
 }

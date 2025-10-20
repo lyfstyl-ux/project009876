@@ -2,10 +2,12 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, User, Coins } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createAvatar } from "@dicebear/core";
 import { avataaars } from "@dicebear/collection";
 import { cn } from "@/lib/utils";
+import { getCoin } from "@zoralabs/coins-sdk";
+import { base } from "viem/chains";
 
 interface CoinCardProps {
   coin: {
@@ -28,6 +30,57 @@ interface CoinCardProps {
 
 export function CoinCard({ coin, className, onClick }: CoinCardProps) {
   const [imageError, setImageError] = useState(false);
+  const [liveMarketCap, setLiveMarketCap] = useState<string | null>(null);
+  const [liveVolume, setLiveVolume] = useState<string | null>(null);
+  const [liveHolders, setLiveHolders] = useState<number | null>(null);
+  const [coinImage, setCoinImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchCoinData() {
+      if (!coin.address) return;
+      
+      try {
+        const response = await getCoin({
+          address: coin.address as `0x${string}`,
+          chain: base.id,
+        });
+
+        const coinData = response.data?.zora20Token;
+        if (coinData) {
+          // Market Cap
+          if (coinData.marketCap !== null && coinData.marketCap !== undefined) {
+            const mcValue = typeof coinData.marketCap === 'string' 
+              ? parseFloat(coinData.marketCap) 
+              : coinData.marketCap;
+            setLiveMarketCap(mcValue.toFixed(2));
+          }
+
+          // Volume 24h
+          if (coinData.volume24h !== null && coinData.volume24h !== undefined) {
+            const volValue = typeof coinData.volume24h === 'string' 
+              ? parseFloat(coinData.volume24h) 
+              : coinData.volume24h;
+            setLiveVolume(volValue.toFixed(2));
+          }
+
+          // Holders count
+          if (coinData.holders !== null && coinData.holders !== undefined) {
+            setLiveHolders(coinData.holders);
+          }
+
+          // Coin image from metadata
+          if (coinData.mediaContent?.previewImage) {
+            const previewImage = coinData.mediaContent.previewImage as any;
+            setCoinImage(previewImage.medium || previewImage.small || null);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching Zora coin data:", error);
+      }
+    }
+
+    fetchCoinData();
+  }, [coin.address]);
 
   return (
     <Card
@@ -61,9 +114,9 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
           </div>
         )}
 
-        {coin.image && !imageError ? (
+        {(coinImage || coin.image) && !imageError ? (
           <img
-            src={coin.image}
+            src={coinImage || coin.image}
             alt={coin.name}
             className="w-full h-full object-cover"
             onError={() => setImageError(true)}
@@ -105,14 +158,14 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
               <TrendingUp className="h-2.5 w-2.5 text-green-500" />
               <span className="text-muted-foreground">MC:</span>
               <span className="font-semibold text-foreground">
-                ${coin.marketCap || "0"}
+                ${liveMarketCap || coin.marketCap || "0"}
               </span>
             </div>
             <div className="flex items-center gap-0.5">
               <TrendingUp className="h-2.5 w-2.5 text-purple-500" />
               <span className="text-muted-foreground">Vol:</span>
               <span className="font-semibold text-foreground">
-                ${coin.volume24h || "0"}
+                ${liveVolume || coin.volume24h || "0"}
               </span>
             </div>
           </div>
@@ -122,7 +175,7 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
               <User className="h-2.5 w-2.5 text-orange-500" />
               <span className="text-muted-foreground">Holders:</span>
               <span className="font-semibold text-foreground">
-                {coin.holders || 0}
+                {liveHolders || coin.holders || 0}
               </span>
             </div>
           </div>
