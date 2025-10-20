@@ -72,7 +72,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex w-full h-screen">
         {/* Desktop Sidebar */}
         <Sidebar className="hidden md:flex" collapsible="icon">
-          <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
+          <SidebarHeader className="border-b border-sidebar-border h-16 flex items-center px-4">
             <Link href="/" className="flex items-center">
               <h1 className="text-lg font-bold tracking-tight group-data-[collapsible=icon]:hidden">
                 creatorland<span className="text-primary">*</span>
