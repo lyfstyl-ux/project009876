@@ -2196,6 +2196,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Register Zora explore routes
+  const { registerZoraExploreRoutes } = await import("./routes/zora-explore");
+  registerZoraExploreRoutes(app);
+
   // Continue with existing code
   app.post("/api/notifications/top-creators", async (_req, res) => {
     try {

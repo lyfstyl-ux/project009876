@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, PlusCircle, User, TrendingUp, Coins, Compass, PenTool, Sparkles } from "lucide-react";
+import { Search, PlusCircle, User, TrendingUp, Coins, Compass, PenTool, Sparkles, Users } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { NotificationBell } from "./notification-bell";
 import { UserMenu } from "./user-menu";

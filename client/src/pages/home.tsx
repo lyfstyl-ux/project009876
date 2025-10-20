@@ -59,6 +59,16 @@ export default function Home() {
     queryKey: ["/api/projects/featured"],
   });
 
+  // Fetch trending coins from Zora
+  const { data: zoraCoinsData, isLoading: loadingZoraCoins } = useQuery({
+    queryKey: ["/api/zora/coins/top-volume"],
+    queryFn: async () => {
+      const response = await fetch("/api/zora/coins/top-volume?count=30");
+      if (!response.ok) throw new Error("Failed to fetch Zora coins");
+      return response.json();
+    },
+  });
+
   const [selectedCategory, setSelectedCategory] = useState("all");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [coinMarketCaps, setCoinMarketCaps] = useState<Record<string, string>>(
@@ -103,98 +113,27 @@ export default function Home() {
     { id: "blog", label: "Blog", Icon: PenTool },
   ];
 
-  const mockCoins = [
-    {
-      id: "1",
-      name: "Creative Coin",
-      symbol: "CRTV",
-      address: "0x1234567890abcdef",
-      image:
-        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop",
-      marketCap: "125,000",
-      volume24h: "15,250",
-      holders: 342,
-      creator: "sarah_artist",
-      category: "Art",
-      platform: "instagram",
-      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "2",
-      name: "Music Token",
-      symbol: "MUSI",
-      address: "0xabcdef1234567890",
-      image:
-        "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=400&fit=crop",
-      marketCap: "89,500",
-      volume24h: "8,920",
-      holders: 215,
-      creator: "dj_beats",
-      category: "Music",
-      platform: "spotify",
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "3",
-      name: "Gaming Gem",
-      symbol: "GAME",
-      address: "0xfedcba0987654321",
-      image:
-        "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=400&fit=crop",
-      marketCap: "256,800",
-      volume24h: "32,100",
-      holders: 589,
-      creator: "pro_gamer",
-      category: "Gaming",
-      platform: "youtube",
-      createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "4",
-      name: "Tech Coin",
-      symbol: "TECH",
-      address: "0x9876543210fedcba",
-      image:
-        "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=400&fit=crop",
-      marketCap: "178,900",
-      volume24h: "21,450",
-      holders: 412,
-      creator: "dev_master",
-      category: "Tech",
-      platform: "github",
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "5",
-      name: "Fashion Token",
-      symbol: "FASH",
-      address: "0x5432109876fedcba",
-      image:
-        "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&h=400&fit=crop",
-      marketCap: "142,300",
-      volume24h: "18,670",
-      holders: 367,
-      creator: "style_icon",
-      category: "Fashion",
-      platform: "tiktok",
-      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "6",
-      name: "Fitness Fuel",
-      symbol: "FIT",
-      address: "0xabcd1234efgh5678",
-      image:
-        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop",
-      marketCap: "95,600",
-      volume24h: "11,230",
-      holders: 278,
-      creator: "fit_coach",
-      category: "Fitness",
-      platform: "youtube",
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  ];
+  // Transform Zora coins data to match our Coin type
+  const zoraCoins: Coin[] = useMemo(() => {
+    if (!zoraCoinsData?.coins) return [];
+    
+    return zoraCoinsData.coins.map((coin: any) => ({
+      id: coin.id || coin.address,
+      name: coin.name || "Unnamed Coin",
+      symbol: coin.symbol || "???",
+      address: coin.address,
+      image: coin.mediaContent?.previewImage?.medium || coin.mediaContent?.previewImage?.small,
+      marketCap: coin.marketCap ? parseFloat(coin.marketCap).toFixed(2) : "0",
+      volume24h: coin.volume24h ? parseFloat(coin.volume24h).toFixed(2) : "0",
+      holders: coin.uniqueHolders || 0,
+      creator: coin.creatorAddress,
+      createdAt: coin.createdAt,
+      category: "Zora",
+      platform: "zora",
+      creator_wallet: coin.creatorAddress,
+      metadata: coin,
+    }));
+  }, [zoraCoinsData]);
 
   const filteredCreators = useMemo(() => {
     if (!trendingCreators) return [];
@@ -279,22 +218,40 @@ export default function Home() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <Coins className="h-6 w-6 text-primary" />
-            <h2 className="text-2xl font-bold">Trending Coins</h2>
+            <h2 className="text-2xl font-bold">Trending Coins from Zora</h2>
           </div>
           <Button variant="ghost" size="sm" data-testid="button-view-all-coins">
             View All
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-1">
-          {mockCoins.map((coin) => (
-            <CoinCard
-              key={coin.id}
-              coin={coin}
-              onClick={() => openTradeModal(coin)}
-            />
-          ))}
-        </div>
+        {loadingZoraCoins ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-1">
+            {[...Array(12)].map((_, i) => (
+              <div
+                key={i}
+                className="h-64 bg-card rounded-2xl animate-pulse"
+                data-testid="skeleton-coin-card"
+              />
+            ))}
+          </div>
+        ) : zoraCoins.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-1">
+            {zoraCoins.slice(0, 12).map((coin) => (
+              <CoinCard
+                key={coin.id}
+                coin={coin}
+                onClick={() => openTradeModal(coin)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">
+              No coins available from Zora at the moment
+            </p>
+          </div>
+        )}
       </section>
 
       {/* Trending Creators */}
