@@ -257,7 +257,6 @@ export default function Home() {
     <div className="container max-w-5xl mx-auto px-4 py-8 space-y-12">
       {/* Instagram Stories Section */}
       <section className="space-y-3">
-        <h2 className="text-base font-semibold text-foreground text-center">Top Creators</h2>
         {isLoading ? (
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 justify-center">
             {[...Array(10)].map((_, i) => (
@@ -274,7 +273,9 @@ export default function Home() {
           <TopCreatorsStories creators={trendingCreators} limit={10} />
         ) : (
           <div className="text-center py-6 text-muted-foreground">
-            <p className="text-sm">No creators available yet. Be the first to create!</p>
+            <p className="text-sm">
+              No creators available yet. Be the first to create!
+            </p>
           </div>
         )}
       </section>
