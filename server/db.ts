@@ -1,7 +1,11 @@
 
+import { config } from 'dotenv';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
+
+// Load environment variables from .env file
+config();
 
 // Check for DATABASE_URL, if not set, use Replit's default PostgreSQL
 const databaseUrl = process.env.DATABASE_URL || process.env.REPLIT_DB_URL;
