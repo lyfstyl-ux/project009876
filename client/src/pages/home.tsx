@@ -166,11 +166,11 @@ export default function Home() {
 
   return (
     <div className="container max-w-5xl mx-auto px-4 py-8 space-y-12">
-      {/* Top Creators Stories */}
+      {/* Instagram Stories Section */}
       {trendingCreators && trendingCreators.length > 0 && (
-        <section className="space-y-3">
+        <section className="space-y-4">
           <h2 className="text-lg font-semibold text-foreground">Top Creators</h2>
-          <TopCreatorsStories creators={trendingCreators} limit={6} />
+          <TopCreatorsStories creators={trendingCreators} limit={10} />
         </section>
       )}
 
