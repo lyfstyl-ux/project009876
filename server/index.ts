@@ -39,7 +39,12 @@ app.use((req, res, next) => {
 
 (async () => {
   // Initialize mock auth (TODO: Replace with Privy)
-  await initMockAuth();
+  try {
+    await initMockAuth();
+  } catch (error) {
+    console.error('⚠️ Failed to initialize mock auth, continuing without it:', error);
+    console.log('🔧 The server will start, but database-dependent features may not work.');
+  }
   
   const server = await registerRoutes(app);
 
