@@ -377,6 +377,22 @@ export const insertReferralSchema = createInsertSchema(referrals).omit({
   hasTradedOrCreated: true,
 });
 
+// Follows table
+export const follows = pgTable("follows", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  followerAddress: text("follower_address").notNull(),
+  followingAddress: text("following_address").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Follow = typeof follows.$inferSelect;
+export type InsertFollow = typeof follows.$inferInsert;
+
+export const insertFollowSchema = createInsertSchema(follows).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Scraped Content table - imported content from URLs
 export const scrapedContent = pgTable("scraped_content", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
