@@ -46,14 +46,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <Sidebar className="hidden md:flex">
           <SidebarContent>
             <SidebarGroup>
-              <SidebarGroupLabel className="px-4 py-3">
-                <Link href="/">
+              <SidebarGroupLabel className="px-2 py-3">
+                <Link href="/" className="flex items-center">
                   <h1 className="text-xl font-bold tracking-tight">
                     creatorland<span className="text-primary">*</span>
                   </h1>
                 </Link>
               </SidebarGroupLabel>
-              <SidebarGroupContent>
+              <SidebarGroupContent className="px-2">
                 <SidebarMenu>
                   {navItems.map((item) => {
                     const Icon = item.icon;
@@ -64,10 +64,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                           asChild
                           isActive={isActive}
                           tooltip={item.label}
+                          className="w-full justify-start"
                         >
-                          <Link href={item.path} data-testid={item.testId}>
-                            <Icon className="h-5 w-5" />
-                            <span>{item.label}</span>
+                          <Link href={item.path} data-testid={item.testId} className="flex items-center gap-3">
+                            <Icon className="h-5 w-5 shrink-0" />
+                            <span className="flex-1">{item.label}</span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -78,18 +79,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </SidebarGroup>
 
             <SidebarGroup>
-              <SidebarGroupLabel>More</SidebarGroupLabel>
-              <SidebarGroupContent>
+              <SidebarGroupLabel className="px-2">More</SidebarGroupLabel>
+              <SidebarGroupContent className="px-2">
                 <SidebarMenu>
                   {secondaryNavItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = location === item.path;
                     return (
                       <SidebarMenuItem key={item.path}>
-                        <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
-                          <Link href={item.path}>
-                            <Icon className="h-5 w-5" />
-                            <span>{item.label}</span>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={isActive} 
+                          tooltip={item.label}
+                          className="w-full justify-start"
+                        >
+                          <Link href={item.path} className="flex items-center gap-3">
+                            <Icon className="h-5 w-5 shrink-0" />
+                            <span className="flex-1">{item.label}</span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
