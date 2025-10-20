@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { CreatorCard } from "@/components/creator-card";
 import { CoinCard } from "@/components/coin-card";
+import { TopCreatorsStories } from "@/components/top-creators-stories";
 import { Button } from "@/components/ui/button";
 import {
   Sparkles,
@@ -165,6 +166,14 @@ export default function Home() {
 
   return (
     <div className="container max-w-5xl mx-auto px-4 py-8 space-y-12">
+      {/* Top Creators Stories */}
+      {trendingCreators && trendingCreators.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-foreground">Top Creators</h2>
+          <TopCreatorsStories creators={trendingCreators} limit={6} />
+        </section>
+      )}
+
       {/* Category Chips */}
       <section className="relative group">
         {/* Left Arrow - Hidden on mobile */}

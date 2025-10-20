@@ -1,10 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TrendingUp, User, Coins } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { getCoin } from "@zoralabs/coins-sdk";
 import { base } from "viem/chains";
+import { createAvatar } from "@dicebear/core";
+import { avataaars } from "@dicebear/collection";
 
 interface CoinCardProps {
   coin: {
@@ -32,6 +35,14 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
   const [liveHolders, setLiveHolders] = useState<number | null>(null);
   const [coinImage, setCoinImage] = useState<string | null>(null);
   const [creatorAvatar, setCreatorAvatar] = useState<string | null>(null);
+  
+  // Generate fallback avatar for creator (synchronous string)
+  const fallbackAvatar = coin.creator
+    ? createAvatar(avataaars, {
+        seed: coin.creator,
+        size: 32,
+      }).toString()
+    : null;
 
   useEffect(() => {
     async function fetchCoinData() {
@@ -63,9 +74,10 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
             setLiveVolume(volValue.toFixed(2));
           }
 
-          // Holders count
-          if (coinData.holders !== null && coinData.holders !== undefined) {
-            setLiveHolders(coinData.holders);
+          // Holders count - use any type cast for Zora SDK response
+          const coinDataAny = coinData as any;
+          if (coinDataAny.uniqueHolders !== null && coinDataAny.uniqueHolders !== undefined) {
+            setLiveHolders(coinDataAny.uniqueHolders);
           }
 
           // Coin image from metadata
@@ -75,8 +87,8 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
           }
 
           // Creator avatar from Zora
-          if (coinData.creator?.avatar) {
-            setCreatorAvatar(coinData.creator.avatar);
+          if (coinDataAny.creatorProfile?.avatar) {
+            setCreatorAvatar(coinDataAny.creatorProfile.avatar);
           }
         }
       } catch (error) {
@@ -148,14 +160,13 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
               {coin.symbol}
             </p>
           </div>
-          {creatorAvatar && (
-            <div className="flex items-center gap-1 ml-1">
-              <img
-                src={creatorAvatar}
-                alt="Creator avatar"
-                className="w-3.5 h-3.5 rounded-full object-cover"
-              />
-            </div>
+          {(creatorAvatar || fallbackAvatar) && (
+            <Avatar className="w-4 h-4 ring-1 ring-primary/20">
+              <AvatarImage src={creatorAvatar || fallbackAvatar || undefined} />
+              <AvatarFallback className="bg-primary/10 text-primary text-[6px]">
+                {coin.creator?.slice(0, 2).toUpperCase() || "??"}
+              </AvatarFallback>
+            </Avatar>
           )}
         </div>
 
