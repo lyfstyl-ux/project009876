@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, PlusCircle, User, TrendingUp, Coins, Compass } from "lucide-react";
+import { Search, PlusCircle, User, TrendingUp, Coins, Compass, PenTool, Sparkles } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { NotificationBell } from "./notification-bell";
 import { UserMenu } from "./user-menu";
@@ -21,6 +21,8 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -199,10 +201,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <NotificationBell />
-                <ThemeToggle />
-                <UserMenu />
+              <div className="flex items-center gap-4">
+                <div data-tour="notification-bell">
+                  <NotificationBell />
+                </div>
+                <div data-tour="user-menu">
+                  <UserMenu />
+                </div>
               </div>
             </div>
           </header>
@@ -225,7 +230,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <Link
                       key={item.path}
                       href={item.path}
-                      data-testid={item.testId}
+                      data-tour={item.testId}
                     >
                       <button
                         className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors ${

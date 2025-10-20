@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AppLayout } from "@/components/app-layout";
+import { ProductTour } from "@/components/product-tour";
 
 // Pages
 import Home from "@/pages/home";
@@ -22,6 +23,7 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <AppLayout>
+      <ProductTour />
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/search" component={Search} />

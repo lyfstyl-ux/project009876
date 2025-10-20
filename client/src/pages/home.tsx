@@ -275,7 +275,7 @@ export default function Home() {
       </section>
 
       {/* Trending Coins */}
-      <section className="space-y-6">
+      <section className="space-y-6" data-tour="trending-coins">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <Coins className="h-6 w-6 text-primary" />
@@ -298,7 +298,7 @@ export default function Home() {
       </section>
 
       {/* Trending Creators */}
-      <section className="space-y-6">
+      <section className="space-y-6" data-tour="trending-creators">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary" />
