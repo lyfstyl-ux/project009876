@@ -1,439 +1,496 @@
-import { useState, useEffect } from "react";
-import { useParams, Link } from "wouter";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { usePrivy } from "@privy-io/react-auth";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLocation } from "wouter";
+import type { Coin } from "@shared/schema";
+import Layout from "@/components/layout";
+import { CoinCard } from "@/components/coin-card";
+import {
+  User as UserIcon,
+  Share2,
+  Grid3x3,
+  List,
+  Copy,
+  Check,
+  TrendingUp,
+  Edit2,
+  Users,
+  Coins as CoinsIcon,
+  Settings as SettingsIcon,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { getCoin } from "@zoralabs/coins-sdk";
+import { base } from "viem/chains";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { Edit, MapPin, Settings, Share2, Grid3x3, List, MessageCircle, UserPlus, Trophy, Sparkles, Award, Users2, Copy, Check } from "lucide-react";
-import type { User, Project } from "@shared/schema";
-import { ShareModal } from "@/components/share-modal";
+import { Button } from "@/components/ui/button";
+import { createAvatar } from '@dicebear/core';
+import { avataaars } from '@dicebear/collection';
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatSmartCurrency } from "@/lib/utils";
 
 export default function Profile() {
-  const { id } = useParams<{ id?: string }>();
   const { user: privyUser, authenticated } = usePrivy();
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("projects");
+  const [selectedTab, setSelectedTab] = useState<"created" | "owned">("created");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [copied, setCopied] = useState(false);
+  const [totalEarnings, setTotalEarnings] = useState<number>(0);
+  const [totalMarketCap, setTotalMarketCap] = useState<number>(0);
+  const [totalHolders, setTotalHolders] = useState<number>(0);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
-  const [referralCodeCopied, setReferralCodeCopied] = useState(false);
-  const [editData, setEditData] = useState({
-    displayName: "",
-    bio: "",
-    location: "",
+  const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string>("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [shareUrl, setShareUrl] = useState<string>("");
+
+  // Get wallet address from Privy
+  const address = privyUser?.wallet?.address;
+
+  const avatarSvg = createAvatar(avataaars, {
+    seed: address || 'anonymous',
+    size: 128,
+  }).toDataUri();
+
+  // Fetch creator data to populate username and bio
+  const { data: creatorData, isLoading: isLoadingCreatorData } = useQuery({
+    queryKey: ['/api/creators/address', address],
+    enabled: !!address && authenticated,
   });
 
-  const BADGE_INFO: Record<string, { name: string; icon: string; color: string }> = {
-    newcomer: { name: "Newcomer", icon: "🌱", color: "bg-green-500" },
-    explorer: { name: "Explorer", icon: "🔍", color: "bg-blue-500" },
-    trader: { name: "Trader", icon: "💎", color: "bg-purple-500" },
-    creator: { name: "Creator", icon: "🎨", color: "bg-pink-500" },
-    influencer: { name: "Influencer", icon: "⭐", color: "bg-yellow-500" },
-    legend: { name: "Legend", icon: "👑", color: "bg-amber-500" },
-    streak_master: { name: "Streak Master", icon: "🔥", color: "bg-orange-500" },
-    referral_king: { name: "Referral King", icon: "🤝", color: "bg-indigo-500" },
-  };
-
-  // Always view own profile when authenticated and no id is provided
-  const profileUserId = privyUser?.wallet?.address;
-  const isOwnProfile = true;
-
-  const { data: referralStats } = useQuery({
-    queryKey: ["/api/referral/stats"],
-    enabled: authenticated,
+  const { data: coins = [], isLoading: isLoadingCoins } = useQuery<Coin[]>({
+    queryKey: ["/api/coins"],
   });
 
-  const { data: user, isLoading } = useQuery<User>({
-    queryKey: ["/api/users", profileUserId],
-    enabled: !!profileUserId && authenticated,
-  });
+  const createdCoins = useMemo(() => {
+    if (!address) return [];
+    return coins.filter(coin =>
+      coin.creatorWallet && coin.creatorWallet.toLowerCase() === address.toLowerCase()
+    );
+  }, [coins, address]);
 
-  const { data: projects = [] } = useQuery<Project[]>({
-    queryKey: ["/api/projects", profileUserId],
-    enabled: !!profileUserId,
-  });
+  const ownedCoins = useMemo(() => {
+    return [];
+  }, []);
+
+  const displayedCoins = selectedTab === "created"
+    ? createdCoins.filter(coin => coin.address !== null) as Array<typeof createdCoins[0] & { address: string }>
+    : ownedCoins;
 
   useEffect(() => {
-    if (user) {
-      setEditData({
-        displayName: user.displayName || "",
-        bio: user.bio || "",
-        location: user.location || "",
+    if (!address || !authenticated || !createdCoins.length) {
+      setTotalEarnings(0);
+      setTotalMarketCap(0);
+      setTotalHolders(0);
+      setIsLoadingStats(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoadingStats(true);
+
+    async function fetchAllStats() {
+      try {
+        let earnings = 0;
+        let marketCap = 0;
+        let holders = 0;
+
+        for (const coin of createdCoins) {
+          if (coin.address && coin.status === 'active') {
+            try {
+              const coinData = await getCoin({
+                collectionAddress: coin.address as `0x${string}`,
+                chainId: base.id,
+              });
+
+              const tokenData = coinData.data?.zora20Token;
+
+              if (tokenData?.creatorEarnings && tokenData.creatorEarnings.length > 0) {
+                const earningAmount = parseFloat(String(tokenData.creatorEarnings[0].amountUsd || tokenData.creatorEarnings[0].amount?.amountDecimal || "0"));
+                earnings += earningAmount;
+              }
+
+              if (tokenData?.marketCap) {
+                marketCap += parseFloat(tokenData.marketCap);
+              }
+
+              if (tokenData?.uniqueHolders) {
+                holders += tokenData.uniqueHolders;
+              }
+            } catch (err) {
+              console.error(`Error fetching coin stats for ${coin.address}:`, err);
+            }
+          }
+        }
+
+        if (isMounted) {
+          setTotalEarnings(earnings);
+          setTotalMarketCap(marketCap);
+          setTotalHolders(holders);
+          setIsLoadingStats(false);
+        }
+      } catch (error) {
+        console.error("Error fetching creator stats:", error);
+        if (isMounted) {
+          setTotalEarnings(0);
+          setTotalMarketCap(0);
+          setTotalHolders(0);
+          setIsLoadingStats(false);
+        }
+      }
+    }
+
+    fetchAllStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [address, authenticated, createdCoins]);
+
+  const formatAddress = (addr: string) => {
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  };
+
+  const handleCopyAddress = async () => {
+    if (!address) return;
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      toast({
+        title: "Address copied",
+        description: "Wallet address copied to clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy address to clipboard",
+        variant: "destructive",
       });
     }
-  }, [user]);
-
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data: Partial<User>) => {
-      const response = await fetch(`/api/users/${profileUserId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Failed to update profile");
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({ title: "Profile updated successfully" });
-      setIsEditModalOpen(false);
-    },
-  });
+  };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/profile/${profileUserId}`;
+    if (!address) return;
+    const url = shareUrl || `${window.location.origin}/profile/${address}`;
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${user?.displayName || user?.username}'s Profile`,
-          url,
+          title: `${creatorData?.name || formatAddress(address)} - CoinIT Profile`,
+          text: `Check out my profile on CoinIT!`,
+          url: url,
         });
       } else {
         await navigator.clipboard.writeText(url);
-        toast({ title: "Link copied to clipboard" });
+        toast({
+          title: "Link copied",
+          description: "Profile link copied to clipboard",
+        });
       }
     } catch (error) {
-      console.error("Share error:", error);
+      console.error('Error sharing:', error);
     }
   };
 
-  const handleCopyReferralCode = async () => {
-    const referralUrl = `${window.location.origin}/join/${user?.username}`;
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setProfileImage(file);
+
+      setIsUploadingImage(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to upload image');
+        }
+
+        const data = await response.json();
+        setProfileImageUrl(data.url);
+
+        toast({
+          title: "Image uploaded",
+          description: "Profile image uploaded successfully",
+        });
+      } catch (error) {
+        console.error('Image upload error:', error);
+        toast({
+          title: "Upload failed",
+          description: "Failed to upload profile image",
+          variant: "destructive",
+        });
+      } finally {
+        setIsUploadingImage(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (creatorData) {
+      setUsername(creatorData.name || '');
+      setBio(creatorData.bio || '');
+      setProfileImageUrl(creatorData.avatar || '');
+    }
+  }, [creatorData]);
+
+  useEffect(() => {
+    if (address) {
+      const profilePath = creatorData?.name 
+        ? `/@${creatorData.name}` 
+        : `/profile/${address}`;
+      const profileUrl = `${window.location.origin}${profilePath}`;
+      setShareUrl(profileUrl);
+    }
+  }, [address, creatorData]);
+
+  const handleSaveProfile = async () => {
+    if (!address) return;
+
     try {
-      await navigator.clipboard.writeText(referralUrl);
-      setReferralCodeCopied(true);
-      toast({ title: "Referral link copied!" });
-      setTimeout(() => setReferralCodeCopied(false), 2000);
+      let creator = creatorData;
+
+      if (!creator) {
+        const createResponse = await apiRequest('POST', '/api/creators', {
+          address,
+          name: username || null,
+          bio: bio || null,
+          avatar: profileImageUrl || null,
+        });
+        creator = await createResponse.json();
+      } else {
+        const updateResponse = await apiRequest('PATCH', `/api/creators/${creator.id}`, {
+          name: username || null,
+          bio: bio || null,
+          avatar: profileImageUrl || null,
+        });
+        creator = await updateResponse.json();
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['/api/creators/address'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/creators'] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/coins"] });
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully",
+      });
+
+      setIsEditModalOpen(false);
     } catch (error) {
-      console.error("Copy error:", error);
+      console.error('Profile update error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      });
     }
   };
 
   if (!authenticated) {
     return (
-      <div className="container max-w-5xl mx-auto px-4 py-8 text-center">
-        <p className="text-muted-foreground">Please login to view your profile</p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="container max-w-5xl mx-auto px-4 py-8">
-        <div className="space-y-6 animate-pulse">
-          <div className="h-48 bg-card rounded-2xl" />
-          <div className="h-96 bg-card rounded-2xl" />
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh] p-8">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <UserIcon className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-2" data-testid="text-connect-wallet">Connect Your Wallet</h2>
+            <p className="text-muted-foreground">
+              Please connect your wallet to view your profile
+            </p>
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
-  if (!user) {
+  if (isLoadingCreatorData) {
     return (
-      <div className="container max-w-5xl mx-auto px-4 py-8 text-center">
-        <p className="text-muted-foreground">User not found</p>
-      </div>
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-muted/20 rounded-full animate-pulse mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading profile...</p>
+          </div>
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="container max-w-5xl mx-auto px-4 py-8">
-      {/* Header Section - Instagram Style */}
-      <div className="mb-8">
-        <div className="flex items-start gap-8 mb-6">
-          {/* Avatar */}
-          <Avatar className="h-40 w-40 ring-2 ring-border">
-            <AvatarImage src={user.avatarUrl || undefined} />
-            <AvatarFallback className="bg-primary text-primary-foreground text-5xl">
-              {user.displayName?.charAt(0) || user.username.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-
-          {/* Info */}
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold">{user.username}</h1>
-              {isOwnProfile ? (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditModalOpen(true)}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/settings">
-                      <Settings className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Button size="sm">
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Follow
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Message
-                  </Button>
-                </div>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsShareModalOpen(true)}
-              >
-                <Share2 className="h-4 w-4" />
-              </Button>
+    <Layout>
+      <div className="max-w-2xl mx-auto p-4 sm:p-6">
+        <div className="relative mb-6">
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="relative mb-4">
+              <img
+                src={profileImageUrl || avatarSvg}
+                alt="Profile Avatar"
+                className="w-28 h-28 rounded-3xl border-4 border-border shadow-xl object-cover"
+                data-testid="img-profile-avatar"
+              />
             </div>
 
-            {/* Stats */}
-            <div className="flex gap-8 text-sm">
-              <div>
-                <span className="font-bold">{projects.length}</span> projects
+            <h1 className="text-2xl font-bold text-foreground mb-1" data-testid="text-username">
+              {creatorData?.name || formatAddress(address || '')}
+            </h1>
+
+            <p className="text-sm text-muted-foreground mb-4" data-testid="text-address">
+              @{address ? `${address.slice(2, 8)}` : ''}
+            </p>
+
+            {creatorData?.bio && (
+              <p className="text-muted-foreground text-sm mb-4 max-w-md px-4" data-testid="text-bio">
+                {creatorData.bio}
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-4 gap-2 mb-6">
+            <div className="text-center">
+              <div className="text-xl font-bold text-foreground mb-1" data-testid="text-coins-count">
+                {isLoadingStats || isLoadingCoins ? '-' : createdCoins.length}
               </div>
-              <div>
-                <span className="font-bold">{user.totalConnections || 0}</span> connections
-              </div>
-              <div>
-                <span className="font-bold">{user.totalProfileViews || 0}</span> views
-              </div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wide">Coins</div>
             </div>
 
-            {/* E1XP Points */}
-            <Card className="p-4 bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-primary/20">
-                    <Trophy className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-primary">
-                      {user.e1xpPoints?.toLocaleString() || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">E1XP Points</div>
-                  </div>
-                </div>
-                {user.pointsBadges && user.pointsBadges.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsShareModalOpen(true)}
-                    className="gap-2"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    Brag
-                  </Button>
-                )}
+            <div className="text-center">
+              <div className="text-xl font-bold text-foreground mb-1" data-testid="text-market-cap">
+                {isLoadingStats ? '-' : totalMarketCap >= 1000000
+                  ? `$${(totalMarketCap / 1000000).toFixed(2)}M`
+                  : totalMarketCap >= 1000
+                    ? `$${(totalMarketCap / 1000).toFixed(1)}k`
+                    : `$${totalMarketCap.toFixed(2)}`}
               </div>
-            </Card>
+              <div className="text-xs text-muted-foreground uppercase tracking-wide">Market Cap</div>
+            </div>
 
-            {/* Referral Stats (Own Profile Only) */}
-            {isOwnProfile && referralStats && (
-              <Card className="p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Users2 className="h-5 w-5 text-blue-500" />
-                      <span className="font-semibold">Referral Program</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsReferralModalOpen(true)}
-                      className="text-xs"
-                    >
-                      View All
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <div className="text-xl font-bold text-blue-500">
-                        {referralStats.totalReferrals}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Referrals</div>
-                    </div>
-                    <div>
-                      <div className="text-xl font-bold text-purple-500">
-                        {referralStats.activeReferrals}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Active</div>
-                    </div>
-                    <div>
-                      <div className="text-xl font-bold text-green-500">
-                        {referralStats.totalEarned}
-                      </div>
-                      <div className="text-xs text-muted-foreground">E1XP Earned</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={user.username}
-                      readOnly
-                      className="flex-1 text-sm"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleCopyReferralCode}
-                    >
-                      {referralCodeCopied ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-center text-muted-foreground">
-                    Share your username to earn 500 E1XP per signup + 2x bonus when they trade!
-                  </p>
-                </div>
-              </Card>
-            )}
-
-            {/* Badges */}
-            {user.pointsBadges && user.pointsBadges.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {user.pointsBadges.map((badge) => {
-                  const info = BADGE_INFO[badge];
-                  if (!info) return null;
-                  return (
-                    <Badge
-                      key={badge}
-                      className={`${info.color} text-white gap-1`}
-                    >
-                      <span>{info.icon}</span>
-                      <span>{info.name}</span>
-                    </Badge>
-                  );
-                })}
+            <div className="text-center">
+              <div className="text-xl font-bold text-foreground mb-1" data-testid="text-holders">
+                {isLoadingStats ? '-' : totalHolders}
               </div>
-            )}
+              <div className="text-xs text-muted-foreground uppercase tracking-wide">Holders</div>
+            </div>
 
-            {/* Bio */}
-            <div className="space-y-2">
-              {user.displayName && (
-                <p className="font-semibold">{user.displayName}</p>
-              )}
-              {user.bio && (
-                <p className="text-sm whitespace-pre-wrap">{user.bio}</p>
-              )}
-              {user.location && (
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  <span>{user.location}</span>
-                </div>
-              )}
-              {user.creatorType && (
-                <Badge variant="secondary">{user.creatorType}</Badge>
-              )}
+            <div className="text-center">
+              <div className="text-xl font-bold text-green-600 dark:text-green-500 mb-1" data-testid="text-earnings">
+                {isLoadingStats ? '-' : formatSmartCurrency(totalEarnings)}
+              </div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wide">Earnings</div>
             </div>
           </div>
+
+          <div className="flex gap-3 mb-6">
+            <Button
+              onClick={() => setIsEditModalOpen(true)}
+              className="flex-1 bg-primary hover:bg-primary/90 text-black font-bold rounded-xl h-11"
+              data-testid="button-edit-profile"
+            >
+              <Edit2 className="w-4 h-4 mr-2" />
+              Edit Profile
+            </Button>
+
+            <Button
+              onClick={handleShare}
+              variant="outline"
+              className="flex-1 rounded-xl h-11"
+              data-testid="button-share"
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              Share
+            </Button>
+
+            <Button
+              onClick={handleCopyAddress}
+              variant="outline"
+              size="icon"
+              className="rounded-xl h-11 w-11"
+              data-testid="button-copy-address"
+            >
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            </Button>
+          </div>
         </div>
+
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-foreground" data-testid="text-created-coins-title">
+            Created Coins {createdCoins.length > 0 && `(${createdCoins.length})`}
+          </h2>
+
+          <div className="flex gap-1 bg-muted/20 rounded-full p-1">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-2 rounded-full transition-colors ${
+                viewMode === "grid"
+                  ? "bg-white text-black dark:bg-white dark:text-black"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="button-view-grid"
+            >
+              <Grid3x3 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-2 rounded-full transition-colors ${
+                viewMode === "list"
+                  ? "bg-white text-black dark:bg-white dark:text-black"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="button-view-list"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {isLoadingCoins ? (
+          <div className="grid grid-cols-2 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="spotify-card rounded-xl overflow-hidden p-3 space-y-3">
+                <div className="aspect-square w-full bg-muted/20 rounded-lg animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+        ) : displayedCoins.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CoinsIcon className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground mb-2" data-testid="text-no-coins">No coins created yet</h3>
+            <p className="text-muted-foreground">Start creating your first coin!</p>
+          </div>
+        ) : (
+          <div className={viewMode === "grid" ? "grid grid-cols-2 gap-4" : "space-y-4"}>
+            {displayedCoins.map((coin) => (
+              <CoinCard
+                key={coin.id}
+                coin={{
+                  ...coin,
+                  createdAt: typeof coin.createdAt === 'string'
+                    ? coin.createdAt
+                    : coin.createdAt
+                      ? coin.createdAt.toISOString()
+                      : new Date().toISOString(),
+                  ipfsUri: coin.ipfsUri ?? undefined
+                }}
+                isOwnCoin={true}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="flex items-center justify-between border-t border-border">
-          <TabsList className="bg-transparent h-12">
-            <TabsTrigger value="projects" className="gap-2">
-              <Grid3x3 className="h-4 w-4" />
-              PROJECTS
-            </TabsTrigger>
-            <TabsTrigger value="coins" className="gap-2">
-              COINS
-            </TabsTrigger>
-            {isOwnProfile && (
-              <TabsTrigger value="saved" className="gap-2">
-                SAVED
-              </TabsTrigger>
-            )}
-          </TabsList>
-
-          {activeTab === "projects" && (
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                size="icon"
-                onClick={() => setViewMode("grid")}
-              >
-                <Grid3x3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "list" ? "default" : "ghost"}
-                size="icon"
-                onClick={() => setViewMode("list")}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </div>
-
-        <TabsContent value="projects" className="mt-0">
-          {projects.length > 0 ? (
-            <div className={viewMode === "grid" 
-              ? "grid grid-cols-3 gap-1" 
-              : "space-y-4"
-            }>
-              {projects.map((project) => (
-                <Card
-                  key={project.id}
-                  className={viewMode === "grid" 
-                    ? "aspect-square overflow-hidden cursor-pointer" 
-                    : "p-4"
-                  }
-                >
-                  {project.imageUrl && (
-                    <img
-                      src={project.imageUrl}
-                      alt={project.title}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                  {viewMode === "list" && (
-                    <div className="mt-2">
-                      <h3 className="font-semibold">{project.title}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {project.description}
-                      </p>
-                    </div>
-                  )}
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No projects yet</p>
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="coins">
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No coins yet</p>
-          </div>
-        </TabsContent>
-
-        {isOwnProfile && (
-          <TabsContent value="saved">
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No saved items</p>
-            </div>
-          </TabsContent>
-        )}
-      </Tabs>
-
-      {/* Edit Profile Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -441,137 +498,50 @@ export default function Profile() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Display Name</label>
+              <label className="text-sm font-medium mb-2 block">Profile Image</label>
               <Input
-                value={editData.displayName}
-                onChange={(e) => setEditData({ ...editData, displayName: e.target.value })}
-                placeholder="Your name"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                disabled={isUploadingImage}
+                data-testid="input-profile-image"
+              />
+              {isUploadingImage && (
+                <p className="text-xs text-muted-foreground mt-1">Uploading...</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Username</label>
+              <Input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Your username"
+                data-testid="input-username"
               />
             </div>
+
             <div>
               <label className="text-sm font-medium mb-2 block">Bio</label>
               <Textarea
-                value={editData.bio}
-                onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
                 placeholder="Tell us about yourself..."
                 rows={4}
+                data-testid="input-bio"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Location</label>
-              <Input
-                value={editData.location}
-                onChange={(e) => setEditData({ ...editData, location: e.target.value })}
-                placeholder="City, Country"
-              />
-            </div>
+
             <Button
-              onClick={() => updateProfileMutation.mutate(editData)}
-              disabled={updateProfileMutation.isPending}
+              onClick={handleSaveProfile}
               className="w-full"
+              data-testid="button-save-profile"
             >
               Save Changes
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Share Modal */}
-      <ShareModal
-        open={isShareModalOpen}
-        onOpenChange={setIsShareModalOpen}
-        type="profile"
-        resourceId={profileUserId || ""}
-        title={`${user.displayName || user.username}'s Profile`}
-      />
-
-      {/* Referral Details Modal */}
-      <Dialog open={isReferralModalOpen} onOpenChange={setIsReferralModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users2 className="h-5 w-5" />
-              Your Referrals
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Card className="p-4 bg-gradient-to-r from-primary/10 to-secondary/10">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-primary">
-                    {referralStats?.totalReferrals || 0}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Total Referrals</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-secondary">
-                    {referralStats?.activeReferrals || 0}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Active</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-500">
-                    {referralStats?.totalEarned || 0}
-                  </div>
-                  <div className="text-xs text-muted-foreground">E1XP Earned</div>
-                </div>
-              </div>
-            </Card>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Your Referral Link</label>
-              <div className="flex gap-2">
-                <Input
-                  value={`${window.location.origin}/join/${user.username}`}
-                  readOnly
-                />
-                <Button size="icon" onClick={handleCopyReferralCode}>
-                  {referralCodeCopied ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h4 className="font-semibold text-sm">How it works:</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Share your username or link with friends</li>
-                <li>• Earn 500 E1XP when they sign up</li>
-                <li>• Get 2x bonus E1XP when they trade or create coins</li>
-                <li>• Track all your referrals and earnings here</li>
-              </ul>
-            </div>
-
-            {referralStats?.referrals && referralStats.referrals.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="font-semibold text-sm">Recent Referrals:</h4>
-                <div className="max-h-48 overflow-y-auto space-y-2">
-                  {referralStats.referrals.map((referral: any) => (
-                    <Card key={referral.id} className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={referral.hasTradedOrCreated ? "default" : "secondary"}>
-                            {referral.status}
-                          </Badge>
-                          <span className="text-sm">
-                            {new Date(referral.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="text-sm font-semibold text-primary">
-                          +{referral.totalPointsEarned} E1XP
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+    </Layout>
   );
 }
