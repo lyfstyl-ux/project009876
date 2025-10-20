@@ -14,6 +14,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -52,15 +53,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex w-full h-screen">
         {/* Desktop Sidebar */}
         <Sidebar className="hidden md:flex">
+          <SidebarHeader className="border-b border-sidebar-border">
+            <Link href="/" className="flex items-center px-2 py-1">
+              <h1 className="text-xl font-bold tracking-tight group-data-[collapsible=icon]:hidden">
+                creatorland<span className="text-primary">*</span>
+              </h1>
+              <span className="hidden group-data-[collapsible=icon]:block text-2xl font-bold text-primary">
+                *
+              </span>
+            </Link>
+          </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
-              <SidebarGroupLabel className="px-2 py-3">
-                <Link href="/" className="flex items-center">
-                  <h1 className="text-xl font-bold tracking-tight">
-                    creatorland<span className="text-primary">*</span>
-                  </h1>
-                </Link>
-              </SidebarGroupLabel>
               <SidebarGroupContent className="px-2">
                 <SidebarMenu>
                   {navItems
