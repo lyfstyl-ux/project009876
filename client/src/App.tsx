@@ -31,7 +31,6 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/search" component={Search} />
-        <Route path="/profile" component={Profile} />
         <Route path="/profile/:identifier" component={PublicProfile} />
         <Route path="/profile" component={Profile} />
         <Route path="/create" component={Create} />

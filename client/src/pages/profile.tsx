@@ -42,18 +42,18 @@ export default function Profile() {
     referral_king: { name: "Referral King", icon: "🤝", color: "bg-indigo-500" },
   };
 
-  // Determine if viewing own profile
-  const isOwnProfile = !id || (privyUser?.wallet?.address && id === privyUser.wallet.address);
-  const profileUserId = id || privyUser?.wallet?.address;
+  // Always view own profile when authenticated and no id is provided
+  const profileUserId = privyUser?.wallet?.address;
+  const isOwnProfile = true;
 
   const { data: referralStats } = useQuery({
     queryKey: ["/api/referral/stats"],
-    enabled: isOwnProfile && authenticated,
+    enabled: authenticated,
   });
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/users", profileUserId],
-    enabled: !!profileUserId,
+    enabled: !!profileUserId && authenticated,
   });
 
   const { data: projects = [] } = useQuery<Project[]>({
@@ -116,7 +116,7 @@ export default function Profile() {
     }
   };
 
-  if (!authenticated && !id) {
+  if (!authenticated) {
     return (
       <div className="container max-w-5xl mx-auto px-4 py-8 text-center">
         <p className="text-muted-foreground">Please login to view your profile</p>
