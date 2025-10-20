@@ -19,7 +19,7 @@ export function TopCreatorsStories({
   return (
     <div
       className={cn(
-        "flex gap-3 overflow-x-auto scrollbar-hide pb-2 justify-center",
+        "flex gap-2 overflow-x-auto scrollbar-hide pb-2 justify-center",
         className,
       )}
     >
@@ -31,16 +31,16 @@ export function TopCreatorsStories({
           <Link
             key={creator.id}
             href={`/profile/${creator.username || creator.id}`}
-            className="flex flex-col items-center gap-1.5 flex-shrink-0 group cursor-pointer"
+            className="flex flex-col items-center gap-1 flex-shrink-0 group cursor-pointer"
             data-testid={`link-story-creator-${creator.id}`}
           >
             <div className="relative">
               {/* Instagram-style gradient ring with animation */}
               <div className="p-[2px] rounded-full bg-gradient-to-tr from-primary via-secondary to-accent group-hover:scale-105 transition-transform duration-200">
-                <div className="p-[2px] rounded-full bg-background">
-                  <Avatar className="h-16 w-16 ring-0">
+                <div className="p-[1.5px] rounded-full bg-background">
+                  <Avatar className="h-12 w-12 ring-0">
                     <AvatarImage src={creator.avatarUrl || undefined} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-foreground font-bold text-lg">
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-foreground font-bold text-sm">
                       {creator.username?.charAt(0).toUpperCase() || "?"}
                     </AvatarFallback>
                   </Avatar>
@@ -48,12 +48,12 @@ export function TopCreatorsStories({
               </div>
 
               {/* Earnings badge */}
-              <div className="absolute -bottom-0.5 -right-0.5 min-w-[24px] h-4 px-1.5 rounded-full bg-green-500 flex items-center justify-center text-[9px] font-bold text-white ring-1 ring-background">
+              <div className="absolute -bottom-0.5 -right-0.5 min-w-[20px] h-3.5 px-1 rounded-full bg-green-500 flex items-center justify-center text-[8px] font-bold text-white ring-1 ring-background">
                 ${earnings}
               </div>
             </div>
 
-            <span className="text-[11px] font-medium text-foreground max-w-[64px] truncate text-center group-hover:text-primary transition-colors">
+            <span className="text-[10px] font-medium text-foreground max-w-[56px] truncate text-center group-hover:text-primary transition-colors">
               {creator.username || "Unknown"}
             </span>
           </Link>

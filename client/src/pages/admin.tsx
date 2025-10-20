@@ -139,8 +139,31 @@ export default function Admin() {
   const hiddenCoins = coins.filter((c: any) => c.hidden === true).length;
 
   return (
-    <div className="flex h-full">
-      <div className="w-64 border-r border-border/40 bg-muted/10 p-4 space-y-2">
+    <div className="flex flex-col md:flex-row h-full">
+      {/* Mobile tabs */}
+      <div className="md:hidden border-b border-border/40 bg-muted/10 p-2 overflow-x-auto">
+        <div className="flex gap-1 min-w-max">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap",
+                activeTab === item.id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover-elevate active-elevate-2"
+              )}
+              data-testid={`button-tab-${item.id}`}
+            >
+              <item.icon className="w-4 h-4" />
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop sidebar */}
+      <div className="hidden md:block w-64 border-r border-border/40 bg-muted/10 p-4 space-y-2">
         <div className="mb-6">
           <h1 className="text-2xl font-black text-foreground mb-1">Admin</h1>
           <div className="flex items-center gap-2 text-xs text-green-500">
@@ -167,7 +190,7 @@ export default function Admin() {
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6">
         {activeTab === 'overview' && (
           <div className="space-y-4">
             <Card className="bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 border-indigo-500/20">

@@ -280,53 +280,6 @@ export default function Home() {
         )}
       </section>
 
-      {/* Category Chips */}
-      <section className="relative group">
-        {/* Left Arrow - Hidden on mobile */}
-        <button
-          onClick={() => scroll("left")}
-          className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm p-2 rounded-full border border-border/50 hover:bg-muted/30 transition-all opacity-0 group-hover:opacity-100"
-          data-testid="button-scroll-left"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-
-        {/* Category Chips */}
-        <div
-          ref={scrollContainerRef}
-          className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide pb-2 justify-center"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
-          {categories.map((category) => {
-            const IconComponent = category.Icon;
-            return (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                type="button"
-                className={`flex-shrink-0 flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                  selectedCategory === category.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/20 text-muted-foreground hover:bg-muted/30 hover:text-foreground"
-                }`}
-                data-testid={`button-category-${category.id}`}
-              >
-                <IconComponent className="w-4 h-4" />
-                {category.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Right Arrow - Hidden on mobile */}
-        <button
-          onClick={() => scroll("right")}
-          className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm p-2 rounded-full border border-border/50 hover:bg-muted/30 transition-all opacity-0 group-hover:opacity-100"
-          data-testid="button-scroll-right"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </section>
 
       {/* Trending Coins */}
       <section className="space-y-6" data-tour="trending-coins">
