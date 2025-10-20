@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Poppins Rounded Font */
+@font-face {
+  font-family: 'Poppins Rounded';
+  src: url('/attached_assets/PoppinsRounded-Regular_1760960791856.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Poppins Rounded';
+  src: url('/attached_assets/PoppinsRounded-Bold_1760960791858.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);
@@ -238,7 +255,8 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply antialiased bg-background text-foreground;
+    font-family: 'Poppins Rounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   }
 }
 
@@ -315,4 +333,45 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+
+  /* Hide scrollbars */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(68 78% 66%), hsl(75 70% 60%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glass-card {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .coin-card {
+    @apply bg-gradient-to-br from-muted/5 to-muted/10 backdrop-blur-sm border border-border/50 rounded-xl transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10;
+  }
+
+  /* Platform icon colors */
+  .platform-icon-youtube { color: #FF0000 !important; }
+  .platform-icon-farcaster { color: #8a63d2 !important; }
+  .platform-icon-gitcoin { color: #02E2AC !important; }
+  .platform-icon-spotify { color: #1DB954 !important; }
+  .platform-icon-tiktok { color: #000000 !important; }
+  .platform-icon-instagram { color: #e6683c !important; }
+  .platform-icon-medium { color: #000000 !important; }
+  .platform-icon-twitter { color: #1DA1F2 !important; }
+  
+  .light .platform-icon-tiktok { color: #EE1D52 !important; }
+  .light .platform-icon-medium { color: #00ab6c !important; }
+  .light .platform-icon-twitter { color: #000000 !important; }
 }

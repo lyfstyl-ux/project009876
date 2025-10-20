@@ -303,3 +303,129 @@ export type LoginStreak = typeof loginStreaks.$inferSelect;
 export type InsertLoginStreak = z.infer<typeof insertLoginStreakSchema>;
 
 export type Bookmark = typeof bookmarks.$inferSelect;
+
+// Scraped Content table - imported content from URLs
+export const scrapedContent = pgTable("scraped_content", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  url: text("url").notNull(),
+  platform: text("platform").notNull().default("blog"),
+  title: text("title").notNull(),
+  description: text("description"),
+  author: text("author"),
+  publishDate: text("publish_date"),
+  image: text("image"),
+  content: text("content"),
+  tags: jsonb("tags").$type<string[]>(),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  scrapedAt: timestamp("scraped_at").defaultNow().notNull(),
+});
+
+// Enhanced Coins table for creator tokens
+export const coins = pgTable("coins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  symbol: text("symbol").notNull(),
+  address: text("address"),
+  creatorWallet: text("creator_wallet").notNull(),
+  status: text("status").notNull().default("pending"),
+  scrapedContentId: varchar("scraped_content_id").references(() => scrapedContent.id),
+  ipfsUri: text("ipfs_uri"),
+  chainId: text("chain_id"),
+  registryTxHash: text("registry_tx_hash"),
+  metadataHash: text("metadata_hash"),
+  registeredAt: timestamp("registered_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  image: text("image"),
+  description: text("description"),
+});
+
+// Rewards table for tracking creator earnings
+export const rewards = pgTable("rewards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: text("type").notNull(),
+  coinAddress: text("coin_address").notNull(),
+  coinSymbol: text("coin_symbol").notNull(),
+  transactionHash: text("transaction_hash").notNull(),
+  rewardAmount: text("reward_amount").notNull(),
+  rewardCurrency: text("reward_currency").notNull().default("ZORA"),
+  recipientAddress: text("recipient_address").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Notifications table
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull(),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  coinAddress: text("coin_address"),
+  coinSymbol: text("coin_symbol"),
+  amount: text("amount"),
+  transactionHash: text("transaction_hash"),
+  read: boolean("read").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Creators table
+export const creators = pgTable("creators", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  address: text("address").notNull().unique(),
+  name: text("name"),
+  bio: text("bio"),
+  avatar: text("avatar"),
+  profileImage: text("profileImage"),
+  verified: text("verified").notNull().default("false"),
+  totalCoins: text("total_coins").notNull().default("0"),
+  totalVolume: text("total_volume").notNull().default("0"),
+  followers: text("followers").notNull().default("0"),
+  referralCode: text("referral_code"),
+  points: text("points").notNull().default("0"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Comments table
+export const comments = pgTable("comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  coinAddress: text("coin_address").notNull(),
+  userAddress: text("user_address").notNull(),
+  comment: text("comment").notNull(),
+  transactionHash: text("transaction_hash"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Type exports for new tables
+export type ScrapedContent = typeof scrapedContent.$inferSelect;
+export type Coin = typeof coins.$inferSelect;
+export type Reward = typeof rewards.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;
+export type Creator = typeof creators.$inferSelect;
+export type Comment = typeof comments.$inferSelect;
+
+export const insertScrapedContentSchema = createInsertSchema(scrapedContent).omit({
+  id: true,
+  scrapedAt: true,
+});
+
+export const insertCoinSchema = createInsertSchema(coins).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  read: true,
+});
+
+export const insertCreatorSchema = createInsertSchema(creators).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertScrapedContent = z.infer<typeof insertScrapedContentSchema>;
+export type InsertCoin = z.infer<typeof insertCoinSchema>;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type InsertCreator = z.infer<typeof insertCreatorSchema>;

@@ -23,7 +23,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               creatorland<span className="text-primary">*</span>
             </h1>
           </Link>
-          
+
           <div className="flex items-center gap-4">
             <ThemeToggle />
           </div>
@@ -32,7 +32,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto pb-16 md:pb-0">
-        {children}
+        <div className="container mx-auto max-w-5xl">
+          {children}
+        </div>
       </main>
 
       {/* Mobile Bottom Navigation */}

@@ -3,21 +3,27 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { getMockCurrentUserId } from "./mock-auth";
 import { insertUserSchema, insertProjectSchema, insertCoinSchema, insertMessageSchema, insertConnectionSchema, insertGroupSchema } from "@shared/schema";
+import { db } from "./db";
+import * as schema from "@shared/schema";
+import { eq, desc, sql } from "drizzle-orm";
+import { Router } from "express";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  const router = Router();
+
   // ========== USERS ==========
-  
+
   // Get current user or user by ID
-  app.get("/api/users/:id?", async (req, res) => {
+  router.get("/api/users/:id?", async (req, res) => {
     try {
       // TODO: Replace with Privy authentication - get user from req.session or JWT token
       const userId = req.params.id || getMockCurrentUserId();
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -26,15 +32,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update user
-  app.patch("/api/users/:id", async (req, res) => {
+  router.patch("/api/users/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const user = await storage.updateUser(id, req.body);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       res.json(user);
     } catch (error) {
       console.error("Error updating user:", error);
@@ -43,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Search creators
-  app.get("/api/creators", async (req, res) => {
+  router.get("/api/creators", async (req, res) => {
     try {
       const { search, category, location, sortBy } = req.query;
       const creators = await storage.searchUsers(search as string || "", {
@@ -59,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get trending creators
-  app.get("/api/creators/trending", async (req, res) => {
+  router.get("/api/creators/trending", async (req, res) => {
     try {
       const creators = await storage.getTrendingCreators(12);
       res.json(creators);
@@ -70,9 +76,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ========== PROJECTS ==========
-  
+
   // Get projects by user
-  app.get("/api/projects/:userId?", async (req, res) => {
+  router.get("/api/projects/:userId?", async (req, res) => {
     try {
       // TODO: Replace with Privy authentication
       const userId = req.params.userId || getMockCurrentUserId();
@@ -85,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get featured projects
-  app.get("/api/projects/featured", async (req, res) => {
+  router.get("/api/projects/featured", async (req, res) => {
     try {
       const projects = await storage.getFeaturedProjects(8);
       res.json(projects);
@@ -96,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create project
-  app.post("/api/projects", async (req, res) => {
+  router.post("/api/projects", async (req, res) => {
     try {
       const validatedData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject(validatedData);
@@ -108,15 +114,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update project
-  app.patch("/api/projects/:id", async (req, res) => {
+  router.patch("/api/projects/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const project = await storage.updateProject(id, req.body);
-      
+
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
-      
+
       res.json(project);
     } catch (error) {
       console.error("Error updating project:", error);
@@ -125,9 +131,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ========== COINS ==========
-  
+
   // Get coins by user
-  app.get("/api/coins/:userId?", async (req, res) => {
+  router.get("/api/coins/:userId?", async (req, res) => {
     try {
       // TODO: Replace with Privy authentication
       const userId = req.params.userId || getMockCurrentUserId();
@@ -140,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create/mint coin
-  app.post("/api/coins", async (req, res) => {
+  router.post("/api/coins", async (req, res) => {
     try {
       const validatedData = insertCoinSchema.parse(req.body);
       const coin = await storage.createCoin(validatedData);
@@ -152,15 +158,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update coin
-  app.patch("/api/coins/:id", async (req, res) => {
+  router.patch("/api/coins/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const coin = await storage.updateCoin(id, req.body);
-      
+
       if (!coin) {
         return res.status(404).json({ message: "Coin not found" });
       }
-      
+
       res.json(coin);
     } catch (error) {
       console.error("Error updating coin:", error);
@@ -169,9 +175,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ========== MESSAGES ==========
-  
+
   // Get conversations
-  app.get("/api/messages/conversations", async (req, res) => {
+  router.get("/api/messages/conversations", async (req, res) => {
     try {
       // TODO: Replace with Privy authentication
       const userId = getMockCurrentUserId();
@@ -184,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get message requests
-  app.get("/api/messages/requests", async (req, res) => {
+  router.get("/api/messages/requests", async (req, res) => {
     try {
       // TODO: Implement message requests logic
       res.json([]);
@@ -195,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get messages with a user
-  app.get("/api/messages/:userId", async (req, res) => {
+  router.get("/api/messages/:userId", async (req, res) => {
     try {
       // TODO: Replace with Privy authentication
       const currentUserId = getMockCurrentUserId();
@@ -209,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send message
-  app.post("/api/messages", async (req, res) => {
+  router.post("/api/messages", async (req, res) => {
     try {
       const validatedData = insertMessageSchema.parse(req.body);
       const message = await storage.createMessage(validatedData);
@@ -221,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mark message as read
-  app.patch("/api/messages/:id/read", async (req, res) => {
+  router.patch("/api/messages/:id/read", async (req, res) => {
     try {
       const { id } = req.params;
       await storage.markMessageAsRead(id);
@@ -233,9 +239,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ========== CONNECTIONS ==========
-  
+
   // Get user's connections
-  app.get("/api/connections", async (req, res) => {
+  router.get("/api/connections", async (req, res) => {
     try {
       // TODO: Replace with Privy authentication
       const userId = getMockCurrentUserId();
@@ -248,7 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get connection invitations/requests
-  app.get("/api/connections/invitations", async (req, res) => {
+  router.get("/api/connections/invitations", async (req, res) => {
     try {
       // TODO: Replace with Privy authentication
       const userId = getMockCurrentUserId();
@@ -261,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create connection request
-  app.post("/api/connections", async (req, res) => {
+  router.post("/api/connections", async (req, res) => {
     try {
       const validatedData = insertConnectionSchema.parse(req.body);
       const connection = await storage.createConnection(validatedData);
@@ -273,15 +279,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update connection (accept/reject)
-  app.patch("/api/connections/:id", async (req, res) => {
+  router.patch("/api/connections/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const connection = await storage.updateConnection(id, req.body);
-      
+
       if (!connection) {
         return res.status(404).json({ message: "Connection not found" });
       }
-      
+
       res.json(connection);
     } catch (error) {
       console.error("Error updating connection:", error);
@@ -290,9 +296,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ========== GROUPS ==========
-  
+
   // Get all groups
-  app.get("/api/groups", async (req, res) => {
+  router.get("/api/groups", async (req, res) => {
     try {
       const groups = await storage.getGroups();
       res.json(groups);
@@ -303,15 +309,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get group by ID
-  app.get("/api/groups/:id", async (req, res) => {
+  router.get("/api/groups/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const group = await storage.getGroup(id);
-      
+
       if (!group) {
         return res.status(404).json({ message: "Group not found" });
       }
-      
+
       res.json(group);
     } catch (error) {
       console.error("Error fetching group:", error);
@@ -320,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create group
-  app.post("/api/groups", async (req, res) => {
+  router.post("/api/groups", async (req, res) => {
     try {
       const validatedData = insertGroupSchema.parse(req.body);
       const group = await storage.createGroup(validatedData);
@@ -332,7 +338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Join group
-  app.post("/api/groups/:id/join", async (req, res) => {
+  router.post("/api/groups/:id/join", async (req, res) => {
     try {
       const { id } = req.params;
       // TODO: Replace with Privy authentication
@@ -346,14 +352,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ========== LOGIN STREAKS ==========
-  
+
   // Get user's login streak
-  app.get("/api/streaks/me", async (req, res) => {
+  router.get("/api/streaks/me", async (req, res) => {
     try {
       // TODO: Replace with Privy authentication
       const userId = getMockCurrentUserId();
       let streak = await storage.getLoginStreak(userId);
-      
+
       if (!streak) {
         // Create initial streak
         streak = await storage.createLoginStreak({
@@ -363,7 +369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalPoints: 0,
         });
       }
-      
+
       res.json(streak);
     } catch (error) {
       console.error("Error fetching streak:", error);
@@ -372,12 +378,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update login streak (check-in)
-  app.post("/api/streaks/checkin", async (req, res) => {
+  router.post("/api/streaks/checkin", async (req, res) => {
     try {
       // TODO: Replace with Privy authentication
       const userId = getMockCurrentUserId();
       let streak = await storage.getLoginStreak(userId);
-      
+
       if (!streak) {
         streak = await storage.createLoginStreak({
           userId,
@@ -389,7 +395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         const lastLogin = streak.lastLoginDate ? new Date(streak.lastLoginDate) : null;
         const today = new Date();
-        const diffDays = lastLogin 
+        const diffDays = lastLogin
           ? Math.floor((today.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24))
           : 999;
 
@@ -412,7 +418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastLoginDate: today,
         });
       }
-      
+
       res.json(streak);
     } catch (error) {
       console.error("Error updating streak:", error);
@@ -421,9 +427,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ========== UPLOAD / IPFS ==========
-  
+
   // Upload to IPFS
-  app.post("/api/upload", async (req, res) => {
+  router.post("/api/upload", async (req, res) => {
     try {
       // TODO: Implement IPFS upload via Pinata
       // This would handle file uploads and return IPFS hash
@@ -433,6 +439,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to upload to IPFS" });
     }
   });
+
+  // Notifications routes
+  router.get("/api/notifications", async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).send({ message: "Unauthorized" });
+    }
+
+    const userNotifications = await db.query.notifications.findMany({
+      where: eq(schema.notifications.userId, userId),
+      orderBy: [desc(schema.notifications.createdAt)],
+    });
+
+    res.json(userNotifications);
+  });
+
+  router.post("/api/notifications/:id/read", async (req, res) => {
+    const { id } = req.params;
+    await db.update(schema.notifications)
+      .set({ read: true })
+      .where(eq(schema.notifications.id, id));
+    res.json({ success: true });
+  });
+
+  router.post("/api/notifications/read-all", async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).send({ message: "Unauthorized" });
+    }
+
+    await db.update(schema.notifications)
+      .set({ read: true })
+      .where(eq(schema.notifications.userId, userId));
+    res.json({ success: true });
+  });
+
+  // Admin routes
+  router.get("/api/admin/stats", async (req, res) => {
+    const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(schema.users);
+    const totalCoins = await db.select({ count: sql<number>`count(*)` }).from(schema.coins);
+    const pendingCoins = await db.select({ count: sql<number>`count(*)` })
+      .from(schema.coins)
+      .where(eq(schema.coins.status, 'pending'));
+    const totalNotifications = await db.select({ count: sql<number>`count(*)` }).from(schema.notifications);
+
+    res.json({
+      totalUsers: totalUsers[0]?.count || 0,
+      totalCoins: totalCoins[0]?.count || 0,
+      pendingCoins: pendingCoins[0]?.count || 0,
+      totalNotifications: totalNotifications[0]?.count || 0,
+    });
+  });
+
+  router.get("/api/admin/users", async (req, res) => {
+    const allUsers = await db.query.users.findMany({
+      orderBy: [desc(schema.users.createdAt)],
+      limit: 100,
+    });
+    res.json(allUsers);
+  });
+
+  router.get("/api/admin/coins", async (req, res) => {
+    const allCoins = await db.query.coins.findMany({
+      orderBy: [desc(schema.coins.createdAt)],
+      limit: 100,
+    });
+    res.json(allCoins);
+  });
+
+  router.get("/api/admin/notifications", async (req, res) => {
+    const allNotifications = await db.query.notifications.findMany({
+      orderBy: [desc(schema.notifications.createdAt)],
+      limit: 100,
+    });
+    res.json(allNotifications);
+  });
+
+  app.use(router);
 
   const httpServer = createServer(app);
 

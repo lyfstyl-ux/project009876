@@ -15,6 +15,7 @@ import Inbox from "@/pages/inbox";
 import Connections from "@/pages/connections";
 import Groups from "@/pages/groups";
 import Streaks from "@/pages/streaks";
+import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/connections" component={Connections} />
         <Route path="/groups" component={Groups} />
         <Route path="/streaks" component={Streaks} />
+        <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
