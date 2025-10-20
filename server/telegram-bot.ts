@@ -560,31 +560,12 @@ export async function stopTelegramBot() {
     try {
       await bot.stopPolling();
       isPolling = false;
+      bot.removeAllListeners();
+      bot = null;
       console.log('Telegram bot stopped');
     } catch (error) {
       console.error('Error stopping Telegram bot:', error);
     }
-  }
-}
-
-// Initialize bot with better error handling
-if (TELEGRAM_BOT_TOKEN) {
-  try {
-    bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: false });
-    
-    // Start polling with error handling
-    bot.startPolling({ restart: false }).then(() => {
-      isPolling = true;
-      console.log('Telegram bot started polling');
-    }).catch((error: any) => {
-      if (error.message?.includes('409')) {
-        console.warn('Another bot instance is already polling. Skipping...');
-      } else {
-        console.error('Failed to start polling:', error);
-      }
-    });
-  } catch (error) {
-    console.error('Failed to initialize Telegram bot:', error);
   }
 }
 
@@ -597,17 +578,7 @@ process.on('SIGINT', async () => {
 process.on('SIGTERM', async () => {
   await stopTelegramBot();
   process.exit(0);
-});f (bot) {
-    try {
-      await bot.stopPolling();
-      bot.removeAllListeners();
-      bot = null;
-      console.log('Telegram bot stopped');
-    } catch (error) {
-      console.error('Error stopping Telegram bot:', error);
-    }
-  }
-}
+});
 
 export { 
   bot, 
