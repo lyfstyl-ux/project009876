@@ -30,7 +30,7 @@ export function TopCreatorsStories({
         return (
           <Link
             key={creator.id}
-            href={`/profile/${creator.id}`}
+            href={`/profile/${creator.username || creator.id}`}
             className="flex flex-col items-center gap-1.5 flex-shrink-0 group cursor-pointer"
             data-testid={`link-story-creator-${creator.id}`}
           >

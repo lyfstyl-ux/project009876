@@ -11,6 +11,7 @@ import { ProductTour } from "@/components/product-tour";
 import Home from "@/pages/home";
 import Search from "@/pages/search";
 import Profile from "@/pages/profile";
+import PublicProfile from "@/pages/public-profile";
 import Create from "@/pages/create";
 import Inbox from "@/pages/inbox";
 import Connections from "@/pages/connections";
@@ -30,7 +31,8 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/search" component={Search} />
-        <Route path="/profile/:id?" component={Profile} />
+        <Route path="/profile" component={Profile} />
+        <Route path="/profile/:identifier" component={PublicProfile} />
         <Route path="/create" component={Create} />
         <Route path="/inbox" component={Inbox} />
         <Route path="/connections" component={Connections} />
