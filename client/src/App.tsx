@@ -40,18 +40,22 @@ function Router() {
 }
 
 import { AppPrivyProvider } from "@/lib/privy-provider";
+import { WagmiProvider } from "wagmi";
+import { config } from "@/lib/wagmi";
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppPrivyProvider>
-        <ThemeProvider defaultTheme="dark">
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </ThemeProvider>
-      </AppPrivyProvider>
+      <WagmiProvider config={config}>
+        <AppPrivyProvider>
+          <ThemeProvider defaultTheme="dark">
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </ThemeProvider>
+        </AppPrivyProvider>
+      </WagmiProvider>
     </QueryClientProvider>
   );
 }
