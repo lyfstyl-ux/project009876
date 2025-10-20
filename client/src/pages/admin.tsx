@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { NotificationTestingPanel } from "@/components/notification-testing-panel";
 
 const PLATFORM_FEE_ADDRESS = "0xf25af781c4F1Df40Ac1D06e6B80c17815AD311F7";
 
@@ -510,7 +511,7 @@ export default function Admin() {
                 <CardDescription>Configure platform-wide settings</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Settings configuration coming soon...</p>
+                <NotificationTestingPanel />
               </CardContent>
             </Card>
           </div>

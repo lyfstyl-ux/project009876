@@ -282,6 +282,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         read: false,
       });
 
+      // Notify creator about successful coin creation
+      const { notificationService } = await import("./notification-service");
+      await notificationService.notifyCoinCreated(creatorAddress, coin);
+
+
       // Record on-chain if coin has been deployed (has address)
       if (coin.address && coin.status === "active") {
         try {
@@ -466,6 +471,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create reward endpoint (for tracking platform and trade fees)
   app.post("/api/rewards", async (req, res) => {
     try {
+      const validatedData = insertReferralSchema.parse(req.body); // Assuming reward schema is similar to referral for now, adjust if different
+
       const {
         type,
         coinAddress,
@@ -474,7 +481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rewardAmount,
         recipientAddress,
         traderAddress,
-      } = req.body;
+      } = validatedData;
 
       if (
         !type ||
@@ -495,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         coinSymbol,
         transactionHash,
         rewardAmount,
-        rewardCurrency: "ZORA",
+        rewardCurrency: "ZORA", // Default currency, adjust if needed
         recipientAddress,
       });
 
@@ -530,6 +537,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Use notification service for randomized earnings messages
         const { notificationService } = await import("./notification-service");
         await notificationService.notifyUserEarnings(recipientAddress, reward);
+
+        // Also send trade notification
+        const amount = (parseFloat(reward.rewardAmount) / 1e18).toFixed(4);
+        await notificationService.notifyNewTrade(
+          recipientAddress,
+          reward.coinSymbol,
+          'buy',
+          `${amount} ${reward.rewardCurrency}`
+        );
       }
 
       res.json(reward);
@@ -652,6 +668,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await notificationService.notifyUserEarnings(
           rewardData.recipientAddress,
           reward,
+        );
+
+        // Also send trade notification
+        const amount = (parseFloat(reward.rewardAmount) / 1e18).toFixed(4);
+        await notificationService.notifyNewTrade(
+          rewardData.recipientAddress,
+          reward.coinSymbol,
+          'buy',
+          `${amount} ${reward.rewardCurrency}`
         );
       }
 
@@ -1541,7 +1566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await sendTelegramNotification(
           address,
           "🎁 Claim Your Welcome Bonus!",
-          "You have 10 points waiting! Visit the app to claim your first daily login bonus 🔥",
+          "You have 10 points waiting! Visit the app to claim your first daily login bonus and start your streak 🔥",
           "reward",
         );
 
@@ -2231,7 +2256,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: "Recent trades notification sent" });
     } catch (error) {
       console.error("Send recent trades notification error:", error);
-      res.status(500).json({ error: "Failed to send notification" });
+      res
+        .status(500)
+        .json({ error: "Failed to send recent trades notification" });
     }
   });
 

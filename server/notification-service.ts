@@ -51,6 +51,185 @@ function getTimePeriod(hours: number): Date {
 
 export class NotificationService {
   
+  // Send daily login streak notification
+  async notifyDailyLoginStreak(userAddress: string, streak: number, pointsEarned: number): Promise<void> {
+    const messages = [
+      `🔥 ${streak} day streak! You earned ${pointsEarned} E1XP!`,
+      `⚡ Amazing! ${streak} days in a row! +${pointsEarned} E1XP`,
+      `💪 Keep it up! ${streak} day streak = ${pointsEarned} E1XP`,
+      `🌟 ${streak} days strong! Earned ${pointsEarned} E1XP!`,
+    ];
+    
+    const message = messages[Math.floor(Math.random() * messages.length)];
+    const title = `🔥 ${streak} Day Streak!`;
+
+    await storage.createNotification({
+      userId: userAddress,
+      type: 'streak',
+      title,
+      message,
+      amount: pointsEarned.toString(),
+    });
+
+    await sendTelegramNotification(userAddress, title, message, 'streak');
+  }
+
+  // Send E1XP claim reminder
+  async notifyE1XPClaimReminder(userAddress: string, availablePoints: number): Promise<void> {
+    const title = `⏰ Don't Forget Your E1XP!`;
+    const message = `You have ${availablePoints} E1XP waiting to be claimed! Don't break your streak!`;
+
+    await storage.createNotification({
+      userId: userAddress,
+      type: 'reminder',
+      title,
+      message,
+      amount: availablePoints.toString(),
+    });
+
+    await sendTelegramNotification(userAddress, title, message, 'reminder');
+  }
+
+  // Send referral notification to referrer
+  async notifyReferralEarned(referrerAddress: string, referredUser: string, bonusPoints: number): Promise<void> {
+    const title = `🎉 Referral Bonus!`;
+    const message = `${formatAddress(referredUser)} joined using your referral! You earned ${bonusPoints} E1XP (2x bonus)`;
+
+    await storage.createNotification({
+      userId: referrerAddress,
+      type: 'referral',
+      title,
+      message,
+      amount: bonusPoints.toString(),
+    });
+
+    await sendTelegramNotification(referrerAddress, title, message, 'referral');
+  }
+
+  // Send new trade notification
+  async notifyNewTrade(userAddress: string, coinSymbol: string, tradeType: 'buy' | 'sell', amount: string, earnedPoints?: number): Promise<void> {
+    const emoji = tradeType === 'buy' ? '💰' : '💸';
+    const action = tradeType === 'buy' ? 'Bought' : 'Sold';
+    const title = `${emoji} ${action} ${coinSymbol}!`;
+    let message = `Successfully ${action.toLowerCase()} ${coinSymbol} for ${amount}`;
+    
+    if (earnedPoints) {
+      message += ` | +${earnedPoints} E1XP earned!`;
+    }
+
+    await storage.createNotification({
+      userId: userAddress,
+      type: 'trade',
+      title,
+      message,
+      coinSymbol,
+      amount: earnedPoints?.toString(),
+    });
+
+    await sendTelegramNotification(userAddress, title, message, 'trade');
+  }
+
+  // Send E1XP points earned notification
+  async notifyE1XPEarned(userAddress: string, points: number, reason: string): Promise<void> {
+    const title = `⚡ E1XP Earned!`;
+    const message = `You earned ${points} E1XP for ${reason}`;
+
+    await storage.createNotification({
+      userId: userAddress,
+      type: 'points',
+      title,
+      message,
+      amount: points.toString(),
+    });
+
+    await sendTelegramNotification(userAddress, title, message, 'points');
+  }
+
+  // Send new creators to follow notification
+  async notifyNewCreatorsToFollow(userAddress: string, creators: Creator[]): Promise<void> {
+    const title = `👥 Discover New Creators!`;
+    const creatorNames = creators.slice(0, 3).map(c => c.name || formatAddress(c.address)).join(', ');
+    const message = `Check out these trending creators: ${creatorNames}${creators.length > 3 ? ` and ${creators.length - 3} more!` : ''}`;
+
+    await storage.createNotification({
+      userId: userAddress,
+      type: 'creator_suggestion',
+      title,
+      message,
+    });
+
+    await sendTelegramNotification(userAddress, title, message, 'creator_suggestion');
+  }
+
+  // Send new follower notification
+  async notifyNewFollower(creatorAddress: string, followerAddress: string): Promise<void> {
+    const title = `🎉 New Follower!`;
+    const message = `${formatAddress(followerAddress)} started following you!`;
+
+    await storage.createNotification({
+      userId: creatorAddress,
+      type: 'follower',
+      title,
+      message,
+    });
+
+    await sendTelegramNotification(creatorAddress, title, message, 'follower');
+  }
+
+  // Send new coin notification
+  async notifyNewCoin(userAddress: string, coin: Coin): Promise<void> {
+    const title = `🪙 New Coin Alert!`;
+    const message = `${coin.name} (${coin.symbol}) just launched! Be an early trader and earn rewards!`;
+
+    await storage.createNotification({
+      userId: userAddress,
+      type: 'coin_created',
+      title,
+      message,
+      coinAddress: coin.address,
+      coinSymbol: coin.symbol,
+    });
+
+    await sendTelegramNotification(userAddress, title, message, 'coin_created');
+  }
+
+  // Send coin created success notification to creator
+  async notifyCoinCreated(creatorAddress: string, coin: Coin): Promise<void> {
+    const title = `🎊 Coin Created Successfully!`;
+    const message = `Your coin ${coin.name} (${coin.symbol}) is now live! Share it to get more holders and earn rewards!`;
+
+    await storage.createNotification({
+      userId: creatorAddress,
+      type: 'coin_created',
+      title,
+      message,
+      coinAddress: coin.address,
+      coinSymbol: coin.symbol,
+    });
+
+    await sendTelegramNotification(creatorAddress, title, message, 'coin_created');
+  }
+
+  // Send milestone notification
+  async notifyMilestone(userAddress: string, milestone: string, reward?: number): Promise<void> {
+    const title = `🏆 Milestone Reached!`;
+    let message = `Congratulations! You've ${milestone}`;
+    
+    if (reward) {
+      message += ` | +${reward} E1XP bonus!`;
+    }
+
+    await storage.createNotification({
+      userId: userAddress,
+      type: 'milestone',
+      title,
+      message,
+      amount: reward?.toString(),
+    });
+
+    await sendTelegramNotification(userAddress, title, message, 'milestone');
+  }
+
   // Get top creators by total volume
   async getTopCreatorsByVolume(limit: number = 10): Promise<Creator[]> {
     const creators = await storage.getAllCreators();

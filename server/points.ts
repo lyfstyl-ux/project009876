@@ -1,7 +1,10 @@
-
 import { db } from "./db";
-import { users, pointsTransactions } from "@shared/schema";
+import { users, pointsTransactions, referrals } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { storage } from './supabase-storage';
+import { sendTelegramNotification } from './telegram-bot';
+import { notificationService } from './notification-service';
+import type { Reward, Creator, Coin } from '@shared/schema';
 
 export const POINTS_REWARDS = {
   DAILY_LOGIN: 10,
@@ -65,7 +68,7 @@ export async function awardPoints(
     const badgeKey = key.toLowerCase();
     if (!currentBadges.includes(badgeKey) && badge.threshold > 0 && newPoints >= badge.threshold) {
       newBadges.push(badgeKey);
-      
+
       // Award bonus points for unlocking badge
       await db.insert(pointsTransactions).values({
         userId,
@@ -74,6 +77,9 @@ export async function awardPoints(
         description: `Unlocked ${badge.name} badge!`,
         metadata: { badge: badgeKey },
       });
+
+      // Notify user about badge unlock
+      await notificationService.notifyBadgeUnlocked(userId, badge.name);
     }
   }
 
@@ -127,7 +133,7 @@ export async function generateReferralCode(userId: string): Promise<string> {
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
-  
+
   if (user?.username) {
     // Use username as referral code
     await db
@@ -136,7 +142,7 @@ export async function generateReferralCode(userId: string): Promise<string> {
       .where(eq(users.id, userId));
     return user.username;
   }
-  
+
   // Fallback to random code if no username
   const code = Math.random().toString(36).substring(2, 10).toUpperCase();
   await db
@@ -147,21 +153,18 @@ export async function generateReferralCode(userId: string): Promise<string> {
 }
 
 export async function trackReferralActivity(userId: string, activityType: 'trade' | 'create_coin') {
-  const { referrals } = await import("@shared/schema");
-  const { createNotification } = await import("./notifications");
-  
   // Check if user was referred
   const [referralRecord] = await db
     .select()
     .from(referrals)
     .where(eq(referrals.referredUserId, userId))
     .limit(1);
-  
+
   if (!referralRecord) return;
-  
-  const bonusPoints = activityType === 'create_coin' ? POINTS_REWARDS.CREATE_COIN : POINTS_REWARDS.TRADE_BUY;
-  const referrerBonus = bonusPoints * POINTS_REWARDS.REFERRAL_BONUS_MULTIPLIER;
-  
+
+  const points = activityType === 'create_coin' ? POINTS_REWARDS.CREATE_COIN : POINTS_REWARDS.TRADE_BUY;
+  const referrerBonus = Math.floor(points * POINTS_REWARDS.REFERRAL_BONUS_MULTIPLIER);
+
   // Award bonus to referrer
   await awardPoints(
     referralRecord.referrerId,
@@ -170,7 +173,7 @@ export async function trackReferralActivity(userId: string, activityType: 'trade
     `Your referral ${activityType === 'create_coin' ? 'created a coin' : 'made a trade'}! 2x bonus!`,
     { referredUserId: userId, activityType }
   );
-  
+
   // Update referral tracking
   await db
     .update(referrals)
@@ -180,16 +183,31 @@ export async function trackReferralActivity(userId: string, activityType: 'trade
       status: 'active',
     })
     .where(eq(referrals.id, referralRecord.id));
-  
+
   // Notify referrer
   const [referrer] = await db.select().from(users).where(eq(users.id, referralRecord.referrerId)).limit(1);
-  if (referrer) {
-    await createNotification({
-      userId: referralRecord.referrerId,
-      type: "referral_bonus",
-      title: "Referral Bonus! 🎉",
-      message: `Your referral just ${activityType === 'create_coin' ? 'created a coin' : 'made a trade'}! You earned ${referrerBonus} E1XP (2x bonus)`,
-      amount: referrerBonus.toString(),
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1); // Fetch referred user for notification message
+
+  if (referrer && user) {
+    // Send notification via service
+    await notificationService.notifyReferralEarned(
+      referrer.id, // Use referrer.id for notification service
+      user.id,     // Use user.id for notification service
+      referrerBonus
+    );
+
+    // Existing notification call (can be removed if notificationService covers all cases)
+    await storage.createNotification({
+      userId: referrer.id, // Use referrer.id here as well
+      type: "referral",
+      title: "🎉 Referral Bonus! 🎉",
+      message: `Your referral ${user.username || user.id} just ${activityType === 'create_coin' ? 'created a coin' : 'made a trade'}! You earned ${referrerBonus} E1XP (2x bonus)`,
+      amount: referrerBonus.toString(), // Ensure amount is a string if required by storage.createNotification
     });
   }
+}
+
+// Admin notification testing function
+export async function sendAdminNotificationTest(userId: string, message: string) {
+  await notificationService.sendTestNotification(userId, message);
 }

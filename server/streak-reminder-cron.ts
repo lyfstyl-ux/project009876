@@ -1,7 +1,7 @@
-
 import cron from 'node-cron';
 import { storage } from './supabase-storage';
 import { sendTelegramNotification } from './telegram-bot';
+import { notificationService } from './notification-service'; // Assuming notificationService is imported from here
 
 // Run every 6 hours to remind users about unclaimed points
 export function startStreakReminderCron() {
@@ -9,7 +9,7 @@ export function startStreakReminderCron() {
   cron.schedule('0 9,15,21 * * *', async () => {
     try {
       console.log('🔔 Running streak reminder check...');
-      
+
       const creators = await storage.getAllCreators();
       const today = new Date().toISOString().split('T')[0];
       let remindersCount = 0;
@@ -20,22 +20,7 @@ export function startStreakReminderCron() {
 
           // New user - hasn't claimed first bonus
           if (!loginStreak) {
-            await storage.createNotification({
-              userId: creator.address,
-              type: 'reward',
-              title: '🎁 Claim Your Welcome Bonus!',
-              message: 'You have 10 points waiting for you! Visit the app to claim your first daily login bonus and start your streak.',
-              amount: '10',
-              read: false,
-            });
-
-            await sendTelegramNotification(
-              creator.address,
-              '🎁 Claim Your Welcome Bonus!',
-              'You have 10 points waiting! Visit the app to claim your first daily login bonus 🔥',
-              'reward'
-            );
-
+            await notificationService.notifyWelcomeBonus(creator.address);
             remindersCount++;
             continue;
           }
@@ -45,7 +30,7 @@ export function startStreakReminderCron() {
             const lastLogin = new Date(loginStreak.lastLoginDate || today);
             const todayDate = new Date(today);
             const daysDiff = Math.floor((todayDate.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24));
-            
+
             let currentStreak = parseInt(loginStreak.currentStreak || '0');
             let pointsAvailable = 10;
             let streakStatus = '';
@@ -59,20 +44,9 @@ export function startStreakReminderCron() {
               streakStatus = `Your ${currentStreak} day streak will reset`;
             }
 
-            await storage.createNotification({
-              userId: creator.address,
-              type: 'reward',
-              title: '🔥 Daily Points Waiting!',
-              message: `${streakStatus}! Claim ${pointsAvailable} points now by visiting the app. Don't let your streak expire!`,
-              amount: pointsAvailable.toString(),
-              read: false,
-            });
-
-            await sendTelegramNotification(
+            await notificationService.notifyE1XPClaimReminder(
               creator.address,
-              '🔥 Daily Points Waiting!',
-              `${streakStatus}! Claim ${pointsAvailable} points now 🎁`,
-              'reward'
+              pointsAvailable.toString()
             );
 
             remindersCount++;

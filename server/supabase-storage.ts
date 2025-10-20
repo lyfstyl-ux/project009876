@@ -388,6 +388,10 @@ export class SupabaseStorage {
 
     const newPoints = parseInt(creator.points || '0');
 
+    // Use notification service
+    const { notificationService } = await import('./notification-service');
+    await notificationService.notifyE1XPEarned(creatorId, amount, reason);
+
     await this.createNotification({
       creator_id: creatorId,
       type,

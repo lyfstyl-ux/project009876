@@ -42,6 +42,19 @@ export function createE1XPRouter(storage: Storage) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
+      const pointsStatus = await storage.getDailyPointsStatus(creatorId);
+      const pointsAwarded = pointsStatus.nextClaimAmount;
+      const newStreak = pointsStatus.streak + 1;
+
+      // Award the points (this will be done by the storage method)
+      // Then send notification
+      const { notificationService } = await import('../notification-service');
+      await notificationService.notifyDailyLoginStreak(
+        creatorId,
+        newStreak,
+        pointsAwarded
+      );
+
       const pointsEarned = await storage.claimDailyPoints(creatorId);
       res.json({ pointsEarned });
     } catch (error: any) {
