@@ -29,9 +29,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const { authenticated } = usePrivy();
 
-  const { data: stats } = useQuery({
-    queryKey: ["/api/admin/stats"],
+  // Fetch real coin statistics
+  const { data: coinStats } = useQuery({
+    queryKey: ["/api/zora/coins/top-volume"],
+    queryFn: async () => {
+      const response = await fetch("/api/zora/coins/top-volume?count=100");
+      if (!response.ok) throw new Error("Failed to fetch coin stats");
+      return response.json();
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
+
+  const totalCoins = coinStats?.coins?.length || 0;
+  const totalMarketCap = coinStats?.coins?.reduce((sum: number, coin: any) => {
+    return sum + (parseFloat(coin.marketCap) || 0);
+  }, 0) || 0;
+
 
   const navItems = [
     { emoji: "🧭", label: "Feed", path: "/", testId: "nav-feed" },
@@ -187,16 +200,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
 
                 {/* Stats Display */}
-                <div className="hidden lg:flex items-center gap-3 text-xs">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/30 border border-border/50">
-                    <Coins className="h-3.5 w-3.5 text-primary" />
+                <div className="hidden lg:flex items-center gap-6 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Coins className="h-4 w-4 text-primary" />
                     <span className="text-muted-foreground">Coins:</span>
-                    <span className="font-semibold text-foreground">{stats?.totalCoins || 0}</span>
+                    <span className="font-semibold">{totalCoins}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/30 border border-border/50">
-                    <TrendingUp className="h-3.5 w-3.5 text-green-500" />
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-accent" />
                     <span className="text-muted-foreground">MC:</span>
-                    <span className="font-semibold text-foreground">${stats?.totalMarketCap || '0'}</span>
+                    <span className="font-semibold">
+                      ${totalMarketCap >= 1000000
+                        ? `${(totalMarketCap / 1000000).toFixed(2)}M`
+                        : totalMarketCap >= 1000
+                        ? `${(totalMarketCap / 1000).toFixed(2)}K`
+                        : totalMarketCap.toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>

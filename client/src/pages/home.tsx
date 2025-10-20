@@ -167,12 +167,25 @@ export default function Home() {
   return (
     <div className="container max-w-5xl mx-auto px-4 py-8 space-y-12">
       {/* Instagram Stories Section */}
-      {trendingCreators && trendingCreators.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-foreground">Top Creators</h2>
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">Top Creators</h2>
+        {isLoading ? (
+          <div className="flex gap-5 overflow-x-auto scrollbar-hide pb-3">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-2.5 flex-shrink-0">
+                <div className="h-20 w-20 rounded-full bg-muted animate-pulse" />
+                <div className="h-3 w-16 bg-muted rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : trendingCreators && trendingCreators.length > 0 ? (
           <TopCreatorsStories creators={trendingCreators} limit={10} />
-        </section>
-      )}
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No creators available yet. Be the first to create!</p>
+          </div>
+        )}
+      </section>
 
       {/* Category Chips */}
       <section className="relative group">

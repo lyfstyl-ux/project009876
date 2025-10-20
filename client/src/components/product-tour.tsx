@@ -34,6 +34,7 @@ export function ProductTour({ onComplete }: ProductTourProps) {
       ),
       placement: "center",
       disableBeacon: true,
+      disableScrolling: true,
     },
     {
       target: "[data-testid='button-category-all']",
@@ -48,7 +49,7 @@ export function ProductTour({ onComplete }: ProductTourProps) {
       placement: "bottom",
     },
     {
-      target: "[data-testid='button-view-all-coins']",
+      target: "[data-tour='trending-coins']",
       content: (
         <div className="space-y-2">
           <h3 className="text-lg font-bold">Trending Coins</h3>
@@ -57,19 +58,8 @@ export function ProductTour({ onComplete }: ProductTourProps) {
           </p>
         </div>
       ),
-      placement: "left",
-    },
-    {
-      target: "[data-testid='button-view-all-creators']",
-      content: (
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold">Discover Top Creators</h3>
-          <p className="text-sm text-muted-foreground">
-            Browse through trending creators and follow your favorites to stay updated with their latest content and coins.
-          </p>
-        </div>
-      ),
-      placement: "left",
+      placement: "top",
+      disableBeacon: true,
     },
     {
       target: "[data-testid='nav-create']",
@@ -110,16 +100,22 @@ export function ProductTour({ onComplete }: ProductTourProps) {
   ];
 
   const handleJoyrideCallback = (data: CallBackProps) => {
-    const { status, index, action } = data;
+    const { status, index, action, type } = data;
 
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
       setRun(false);
       localStorage.setItem("hasSeenProductTour", "true");
       onComplete?.();
+      return;
     }
 
-    if (action === "next" || action === "prev") {
-      setStepIndex(index + (action === "next" ? 1 : -1));
+    // Update step index on next/prev actions
+    if (type === 'step:after') {
+      if (action === 'next') {
+        setStepIndex(index + 1);
+      } else if (action === 'prev') {
+        setStepIndex(index - 1);
+      }
     }
   };
 
@@ -132,8 +128,10 @@ export function ProductTour({ onComplete }: ProductTourProps) {
       showProgress
       showSkipButton
       scrollToFirstStep
-      scrollOffset={100}
-      disableScrolling={false}
+      scrollOffset={120}
+      disableScrolling
+      disableOverlayClose
+      spotlightClicks
       callback={handleJoyrideCallback}
       styles={{
         options: {
