@@ -3,7 +3,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { usePrivy } from "@privy-io/react-auth";
 import { useLocation } from "wouter";
 import type { Coin } from "@shared/schema";
-import Layout from "@/components/layout";
 import { CoinCard } from "@/components/coin-card";
 import {
   User as UserIcon,
@@ -70,7 +69,7 @@ export default function Profile() {
   const createdCoins = useMemo(() => {
     if (!address) return [];
     return coins.filter(coin =>
-      coin.creatorWallet && coin.creatorWallet.toLowerCase() === address.toLowerCase()
+      coin.creator_wallet && coin.creator_wallet.toLowerCase() === address.toLowerCase()
     );
   }, [coins, address]);
 
@@ -299,37 +298,33 @@ export default function Profile() {
 
   if (!authenticated) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh] p-8">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <UserIcon className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2" data-testid="text-connect-wallet">Connect Your Wallet</h2>
-            <p className="text-muted-foreground">
-              Please connect your wallet to view your profile
-            </p>
+      <div className="flex items-center justify-center min-h-[60vh] p-8">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserIcon className="w-8 h-8 text-muted-foreground" />
           </div>
+          <h2 className="text-2xl font-bold text-foreground mb-2" data-testid="text-connect-wallet">Connect Your Wallet</h2>
+          <p className="text-muted-foreground">
+            Please connect your wallet to view your profile
+          </p>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   if (isLoadingCreatorData) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-muted/20 rounded-full animate-pulse mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading profile...</p>
-          </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-muted/20 rounded-full animate-pulse mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading profile...</p>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   return (
-    <Layout>
+    <div>
       <div className="max-w-2xl mx-auto p-4 sm:p-6">
         <div className="relative mb-6">
           <div className="flex flex-col items-center text-center mb-6">
@@ -542,6 +537,6 @@ export default function Profile() {
           </div>
         </DialogContent>
       </Dialog>
-    </Layout>
+    </div>
   );
 }
