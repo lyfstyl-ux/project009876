@@ -1,343 +1,381 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import URLInputForm from "@/components/url-input-form";
+import ContentPreviewCard from "@/components/content-preview-card";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Upload, Link as LinkIcon, Sparkles, Search } from "lucide-react";
+  Upload,
+  Link as LinkIcon,
+  Image,
+  Film,
+  Music,
+  FileText,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const createProjectSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  category: z.string().min(1, "Please select a category"),
-  sourceUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  thumbnailUrl: z.string().url().optional().or(z.literal("")),
-});
-
-type CreateProjectForm = z.infer<typeof createProjectSchema>;
+type TabType = "import" | "upload";
 
 export default function Create() {
-  const [step, setStep] = useState<"input" | "preview" | "minting">("input");
-  const [uploadMethod, setUploadMethod] = useState<"url" | "file">("url");
+  const [showPreview, setShowPreview] = useState(false);
+  const [scrapedData, setScrapedData] = useState<any>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string>("");
+  const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [uploadAuthor, setUploadAuthor] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>("import");
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState("");
 
-  const form = useForm<CreateProjectForm>({
-    resolver: zodResolver(createProjectSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      category: "",
-      sourceUrl: "",
-      thumbnailUrl: "",
-    },
-  });
-
-  const onSubmit = async (data: CreateProjectForm) => {
-    console.log("Creating project:", data);
-    setStep("preview");
-    toast({
-      title: "Project created!",
-      description: "Your project is ready to be minted as a creator coin.",
-    });
+  const handleScrapedData = (data: any) => {
+    setScrapedData(data);
+    setShowPreview(true);
   };
 
-  const handleMint = async () => {
-    setStep("minting");
-    // Simulate minting process
-    setTimeout(() => {
+  const handleCoinCreated = () => {
+    setShowPreview(false);
+    setScrapedData(null);
+    resetUploadForm();
+  };
+
+  const resetUploadForm = () => {
+    setUploadedFile(null);
+    setUploadPreviewUrl("");
+    setUploadTitle("");
+    setUploadDescription("");
+    setUploadAuthor("");
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "video/mp4",
+      "video/webm",
+      "video/quicktime",
+      "audio/mpeg",
+      "audio/wav",
+      "audio/mp3",
+      "audio/ogg",
+      "audio/aac",
+    ];
+    const maxSize = 100 * 1024 * 1024;
+
+    if (!validTypes.includes(file.type)) {
       toast({
-        title: "Successfully minted!",
-        description: "Your creator coin is now tradeable on the marketplace.",
+        title: "Invalid file type",
+        description: "Please upload an image, video, or audio file",
+        variant: "destructive",
       });
-    }, 2000);
+      return;
+    }
+
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Maximum file size is 100MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadedFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setUploadPreviewUrl(previewUrl);
+
+    if (!uploadTitle) {
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+      setUploadTitle(nameWithoutExt);
+    }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Searching for:", searchQuery);
-    // Implement actual search logic here
-    toast({
-      title: "Search initiated",
-      description: `Looking for "${searchQuery}"...`,
-    });
+  const handleUploadPreview = async () => {
+    if (!uploadedFile || !uploadTitle) {
+      toast({
+        title: "Missing information",
+        description: "Please upload a file and provide a title",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", uploadedFile);
+      formData.append("title", uploadTitle);
+      formData.append("description", uploadDescription);
+      formData.append("author", uploadAuthor);
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Failed to upload file");
+      }
+
+      const { uploadData } = await uploadRes.json();
+
+      setScrapedData(uploadData);
+      setShowPreview(true);
+
+      toast({
+        title: "Upload successful",
+        description: "Review your content and create your coin",
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload file. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const getFileIcon = () => {
+    if (!uploadedFile) return <FileText className="w-6 h-6" />;
+    const type = uploadedFile.type.split("/")[0];
+    switch (type) {
+      case "image":
+        return <Image className="w-6 h-6" />;
+      case "video":
+        return <Film className="w-6 h-6" />;
+      case "audio":
+        return <Music className="w-6 h-6" />;
+      default:
+        return <FileText className="w-6 h-6" />;
+    }
   };
 
   return (
-    <div className="container max-w-5xl mx-auto px-4 py-8 space-y-8">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">Create Project</h1>
-          <p className="text-muted-foreground">
-            Turn your content into a tradeable creator coin
+    <div className="p-4 sm:p-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-8 text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <h1 className="text-2xl sm:text-3xl font-black text-foreground">
+              Create Your Coin
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Transform any content into a tradeable digital asset
           </p>
         </div>
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="flex items-center space-x-2">
-          <Input
-            type="search"
-            placeholder="Search projects..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-64"
-          />
-          <Button type="submit" size="icon" aria-label="Search">
-            <Search className="h-5 w-5" />
-          </Button>
-        </form>
-      </div>
 
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab("import")}
+            className={`
+              relative flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all
+              ${
+                activeTab === "import"
+                  ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover-elevate active-elevate-2"
+              }
+            `}
+            data-testid="button-tab-import"
+          >
+            <LinkIcon className="w-4 h-4" />
+            Import URL
+          </button>
+          <button
+            onClick={() => setActiveTab("upload")}
+            className={`
+              relative flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all
+              ${
+                activeTab === "upload"
+                  ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover-elevate active-elevate-2"
+              }
+            `}
+            data-testid="button-tab-upload"
+          >
+            <Upload className="w-4 h-4" />
+            Upload File
+          </button>
+        </div>
 
-      {/* Progress Steps */}
-      <div className="flex items-center justify-center gap-4">
-        <div className={`flex items-center gap-2 ${step === "input" ? "text-primary" : "text-muted-foreground"}`}>
-          <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 ${
-            step === "input" ? "border-primary bg-primary/10" : "border-muted"
-          }`}>
-            1
-          </div>
-          <span className="text-sm font-medium">Details</span>
-        </div>
-        <div className="h-px w-12 bg-border" />
-        <div className={`flex items-center gap-2 ${step === "preview" ? "text-primary" : "text-muted-foreground"}`}>
-          <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 ${
-            step === "preview" ? "border-primary bg-primary/10" : "border-muted"
-          }`}>
-            2
-          </div>
-          <span className="text-sm font-medium">Preview</span>
-        </div>
-        <div className="h-px w-12 bg-border" />
-        <div className={`flex items-center gap-2 ${step === "minting" ? "text-primary" : "text-muted-foreground"}`}>
-          <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 ${
-            step === "minting" ? "border-primary bg-primary/10" : "border-muted"
-          }`}>
-            3
-          </div>
-          <span className="text-sm font-medium">Mint</span>
-        </div>
-      </div>
+        <div className="mb-6">
+          {activeTab === "import" ? (
+            <URLInputForm onScraped={handleScrapedData} />
+          ) : (
+            <div className="max-w-xl mx-auto">
+              <div className="bg-card border border-border/50 rounded-3xl p-8">
+                <div className="space-y-6">
+                  <div className="border-2 border-dashed border-border/40 rounded-2xl p-10 text-center bg-muted/20 hover:border-primary/50 transition-all hover:bg-muted/30">
+                    <input
+                      type="file"
+                      id="file-upload"
+                      className="hidden"
+                      accept="image/*,video/*,audio/*,.mov"
+                      onChange={handleFileUpload}
+                      data-testid="input-file-upload"
+                    />
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <div className="flex flex-col items-center gap-4">
+                        {uploadedFile ? (
+                          <>
+                            <div className="p-4 rounded-2xl bg-primary/10">
+                              {getFileIcon()}
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-sm font-semibold text-foreground">
+                                {uploadedFile.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB
+                              </p>
+                            </div>
+                            {uploadPreviewUrl && uploadedFile.type.startsWith("image/") && (
+                              <img
+                                src={uploadPreviewUrl}
+                                alt="Preview"
+                                className="mt-2 max-h-48 rounded-2xl shadow-xl"
+                              />
+                            )}
+                            {uploadPreviewUrl && uploadedFile.type.startsWith("video/") && (
+                              <video
+                                src={uploadPreviewUrl}
+                                controls
+                                className="mt-2 max-h-48 rounded-2xl shadow-xl"
+                              />
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 mb-2">
+                              <Upload className="w-10 h-10 text-primary" />
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-base font-semibold text-foreground">
+                                Drag & drop or click to upload
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Images, Videos, or Audio • Max 100MB
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </label>
+                  </div>
 
-      {/* Input Step */}
-      {step === "input" && (
-        <Card className="p-6 md:p-8">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Upload Method */}
-              <div className="space-y-4">
-                <FormLabel>Content Source</FormLabel>
-                <div className="grid grid-cols-2 gap-4">
-                  <Button
-                    type="button"
-                    variant={uploadMethod === "url" ? "default" : "outline"}
-                    onClick={() => setUploadMethod("url")}
-                    data-testid="button-upload-url"
-                    className="h-24"
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <LinkIcon className="h-6 w-6" />
-                      <span>URL</span>
+                  {uploadedFile && (
+                    <div className="space-y-5 pt-2 border-t border-border/30">
+                      <div className="space-y-2">
+                        <Label htmlFor="upload-title" className="text-sm font-medium text-foreground">
+                          Title <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="bg-muted/30 dark:bg-muted/20 rounded-2xl p-1 border border-border/30">
+                          <Input
+                            id="upload-title"
+                            value={uploadTitle}
+                            onChange={(e) => setUploadTitle(e.target.value)}
+                            placeholder="Enter content title"
+                            className="bg-transparent border-0 h-11 px-4 focus-visible:ring-0 focus-visible:ring-offset-0"
+                            data-testid="input-upload-title"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="upload-description" className="text-sm font-medium text-foreground">
+                          Description
+                        </Label>
+                        <div className="bg-muted/30 dark:bg-muted/20 rounded-2xl p-1 border border-border/30">
+                          <Textarea
+                            id="upload-description"
+                            value={uploadDescription}
+                            onChange={(e) => setUploadDescription(e.target.value)}
+                            placeholder="Describe your content (optional)"
+                            className="bg-transparent border-0 resize-none px-4 focus-visible:ring-0 focus-visible:ring-offset-0"
+                            rows={3}
+                            data-testid="input-upload-description"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="upload-author" className="text-sm font-medium text-foreground">
+                          Creator Name
+                        </Label>
+                        <div className="bg-muted/30 dark:bg-muted/20 rounded-2xl p-1 border border-border/30">
+                          <Input
+                            id="upload-author"
+                            value={uploadAuthor}
+                            onChange={(e) => setUploadAuthor(e.target.value)}
+                            placeholder="Your name or username (optional)"
+                            className="bg-transparent border-0 h-11 px-4 focus-visible:ring-0 focus-visible:ring-offset-0"
+                            data-testid="input-upload-author"
+                          />
+                        </div>
+                      </div>
+
+                      <Button
+                        onClick={handleUploadPreview}
+                        disabled={isUploading || !uploadTitle}
+                        className="w-full h-12 bg-gradient-to-r from-primary to-primary hover:from-primary/100 hover:to-primary/90 text-primary-foreground font-semibold rounded-2xl transition-all"
+                        data-testid="button-upload-preview"
+                      >
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-5 h-5 mr-2" />
+                            Preview & Create Coin
+                          </>
+                        )}
+                      </Button>
                     </div>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={uploadMethod === "file" ? "default" : "outline"}
-                    onClick={() => setUploadMethod("file")}
-                    data-testid="button-upload-file"
-                    className="h-24"
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <Upload className="h-6 w-6" />
-                      <span>File Upload</span>
-                    </div>
-                  </Button>
+                  )}
                 </div>
               </div>
+            </div>
+          )}
+        </div>
 
-              {uploadMethod === "url" && (
-                <FormField
-                  control={form.control}
-                  name="sourceUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Content URL</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://example.com/your-content"
-                          {...field}
-                          data-testid="input-source-url"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Link to your blog post, video, music, or other content
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+          <DialogContent className="max-w-lg w-[92vw] max-h-[80vh] overflow-y-auto bg-card border-border/50 rounded-3xl p-0 gap-0">
+            <DialogHeader className="px-5 pt-5 pb-3 border-b border-border/30">
+              <DialogTitle className="text-lg font-bold text-foreground">
+                Preview & Create Coin
+              </DialogTitle>
+            </DialogHeader>
+            <div className="px-5 py-4">
+              {scrapedData && (
+                <ContentPreviewCard
+                  scrapedData={scrapedData}
+                  onCoinCreated={handleCoinCreated}
                 />
               )}
-
-              {uploadMethod === "file" && (
-                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover-elevate transition-all cursor-pointer">
-                  <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Click to upload or drag and drop
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    PNG, JPG, GIF, MP4 up to 50MB
-                  </p>
-                </div>
-              )}
-
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Project Title</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="My Amazing Project"
-                        {...field}
-                        data-testid="input-title"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Tell us about your project..."
-                        className="min-h-32"
-                        {...field}
-                        data-testid="input-description"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-category">
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="music">Music</SelectItem>
-                        <SelectItem value="art">Art</SelectItem>
-                        <SelectItem value="video">Video</SelectItem>
-                        <SelectItem value="writing">Writing</SelectItem>
-                        <SelectItem value="gaming">Gaming</SelectItem>
-                        <SelectItem value="tech">Tech</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="submit" className="w-full" size="lg" data-testid="button-continue">
-                Continue to Preview
-              </Button>
-            </form>
-          </Form>
-        </Card>
-      )}
-
-      {/* Preview Step */}
-      {step === "preview" && (
-        <Card className="p-6 md:p-8 space-y-6">
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Preview Your Project</h2>
-            <p className="text-muted-foreground">
-              Review your project details before minting
-            </p>
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-semibold mb-2">Title</h3>
-              <p>{form.getValues("title")}</p>
             </div>
-            <div>
-              <h3 className="font-semibold mb-2">Description</h3>
-              <p className="text-muted-foreground">{form.getValues("description")}</p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Category</h3>
-              <p className="capitalize">{form.getValues("category")}</p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <Button
-              variant="outline"
-              onClick={() => setStep("input")}
-              className="flex-1"
-              data-testid="button-back"
-            >
-              Back
-            </Button>
-            <Button
-              onClick={handleMint}
-              className="flex-1"
-              data-testid="button-mint"
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              Mint Creator Coin
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* Minting Step */}
-      {step === "minting" && (
-        <Card className="p-12 text-center space-y-4">
-          <div className="animate-pulse">
-            <Sparkles className="h-16 w-16 mx-auto text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold">Minting Your Creator Coin...</h2>
-          <p className="text-muted-foreground">
-            Please wait while we deploy your coin on Base blockchain
-          </p>
-        </Card>
-      )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
