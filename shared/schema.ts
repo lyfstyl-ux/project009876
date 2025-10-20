@@ -293,6 +293,8 @@ export const insertCoinSchema = createInsertSchema(coins, {
   createdAt: true,
 });
 
+export const updateCoinSchema = insertCoinSchema.partial();
+
 export type Coin = typeof coins.$inferSelect;
 export type InsertCoin = z.infer<typeof insertCoinSchema>;
 

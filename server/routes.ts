@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./supabase-storage";
+import { storage } from "./storage";
 import {
   insertScrapedContentSchema,
   insertCoinSchema,
@@ -9,7 +9,6 @@ import {
   insertNotificationSchema,
   insertFollowSchema,
   insertReferralSchema,
-  updateCreatorSchema,
 } from "@shared/schema";
 import axios from "axios";
 import { detectPlatform } from "./platform-detector";
