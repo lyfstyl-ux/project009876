@@ -32,7 +32,8 @@ export default function PublicProfile() {
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const { toast } = useToast();
 
-  const isAddress = identifier.startsWith("0x");
+  // Determine if identifier is a wallet address (0x...) or username
+  const isAddress = identifier.startsWith("0x") && identifier.length === 42;
 
   const { data: creatorData, isLoading: isLoadingCreatorData } = useQuery({
     queryKey: ['/api/creators', isAddress ? 'address' : 'username', identifier],
@@ -41,7 +42,10 @@ export default function PublicProfile() {
         ? `/api/creators/address/${identifier}`
         : `/api/creators/username/${identifier}`;
       const response = await fetch(endpoint);
-      if (!response.ok) return null;
+      if (!response.ok) {
+        console.error(`Failed to fetch creator data from ${endpoint}:`, response.status);
+        return null;
+      }
       return response.json();
     },
     enabled: !!identifier,
@@ -179,8 +183,14 @@ export default function PublicProfile() {
       <div className="flex items-center justify-center min-h-[60vh] p-8">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-2">User Not Found</h2>
-          <p className="text-muted-foreground">
-            This creator doesn't exist or hasn't created a profile yet.
+          <p className="text-muted-foreground mb-4">
+            {isAddress 
+              ? `No creator found with address: ${identifier.slice(0, 6)}...${identifier.slice(-4)}`
+              : `No creator found with username: ${identifier}`
+            }
+          </p>
+          <p className="text-xs text-muted-foreground">
+            This creator may not have created their profile yet or the identifier is incorrect.
           </p>
         </div>
       </div>

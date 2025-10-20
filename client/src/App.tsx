@@ -33,6 +33,7 @@ function Router() {
         <Route path="/search" component={Search} />
         <Route path="/profile" component={Profile} />
         <Route path="/profile/:identifier" component={PublicProfile} />
+        <Route path="/profile" component={Profile} />
         <Route path="/create" component={Create} />
         <Route path="/inbox" component={Inbox} />
         <Route path="/connections" component={Connections} />
