@@ -1,12 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { getMockCurrentUserId } from "./mock-auth";
+import { getMockCurrentUserId, getCurrentUserId, setCurrentUserId } from "./mock-auth";
 import { insertUserSchema, insertProjectSchema, insertCoinSchema, insertMessageSchema, insertConnectionSchema, insertGroupSchema } from "@shared/schema";
 import { db } from "./db";
 import * as schema from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { Router } from "express";
+import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, createNotification } from "./notifications";
 
 // Privy auth middleware
 const privyAuth = async (req: any, res: any, next: any) => {
@@ -31,7 +32,7 @@ const privyAuth = async (req: any, res: any, next: any) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const router = Router();
-  
+
   // Apply auth middleware to all routes
   router.use(privyAuth);
 
@@ -174,13 +175,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertCoinSchema.parse(req.body);
       const coin = await storage.createCoin(validatedData);
-      
+
       // Track referral activity
       if (coin.userId) {
         const { trackReferralActivity } = await import("./points");
         await trackReferralActivity(coin.userId, 'create_coin');
       }
-      
+
       res.status(201).json(coin);
     } catch (error) {
       console.error("Error creating coin:", error);
@@ -413,7 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user?.id || getMockCurrentUserId();
       let streak = await storage.getLoginStreak(userId);
-      const { checkAndAwardSpecialBadges } = await import("./points");
+      const { trackReferralActivity, awardPoints, generateReferralCode, POINTS_REWARDS, BADGES, checkAndAwardSpecialBadges } = await import("./points");
 
       if (!streak) {
         streak = await storage.createLoginStreak({
@@ -494,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ========== E1XP POINTS SYSTEM ==========
 
-  const { awardPoints, generateReferralCode, POINTS_REWARDS, BADGES } = await import("./points");
+  const { awardPoints, generateReferralCode, POINTS_REWARDS, BADGES, checkAndAwardSpecialBadges } = await import("./points");
 
   // Get user's points history
   router.get("/api/points/history", async (req, res) => {
@@ -531,7 +532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user?.id || getMockCurrentUserId();
       const [user] = await db.select().from(schema.users).where(eq(schema.users.id, userId)).limit(1);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -548,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   router.get("/api/referral/stats", async (req, res) => {
     try {
       const userId = req.user?.id || getMockCurrentUserId();
-      
+
       const referralList = await db.select().from(schema.referrals)
         .where(eq(schema.referrals.referrerId, userId));
 
@@ -573,7 +574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { referralCode } = req.body;
       const userId = req.user?.id || getMockCurrentUserId();
-      const { createNotification } = await import("./notifications");
+      const { trackReferralActivity, awardPoints, generateReferralCode, POINTS_REWARDS, BADGES, checkAndAwardSpecialBadges, createNotification } = await import("./points");
 
       // Find referrer by username (referral code)
       const [referrer] = await db.select().from(schema.users)
@@ -605,7 +606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Award points to referrer
       await awardPoints(referrer.id, POINTS_REWARDS.REFERRAL_SIGNUP, "referral", "New referral signup!", { referredUserId: userId });
-      
+
       // Award welcome bonus to new user
       await awardPoints(userId, 100, "referral", "Welcome bonus from referral!");
 
@@ -698,39 +699,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Notifications routes
+  // Notification routes
   router.get("/api/notifications", async (req, res) => {
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).send({ message: "Unauthorized" });
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const notifications = await getUserNotifications(userId);
+      res.json(notifications);
+    } catch (error: any) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
     }
-
-    const userNotifications = await db.query.notifications.findMany({
-      where: eq(schema.notifications.userId, userId),
-      orderBy: [desc(schema.notifications.createdAt)],
-    });
-
-    res.json(userNotifications);
   });
 
   router.post("/api/notifications/:id/read", async (req, res) => {
-    const { id } = req.params;
-    await db.update(schema.notifications)
-      .set({ read: true })
-      .where(eq(schema.notifications.id, id));
-    res.json({ success: true });
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      await markNotificationAsRead(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
   });
 
   router.post("/api/notifications/read-all", async (req, res) => {
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).send({ message: "Unauthorized" });
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      await markAllNotificationsAsRead(userId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
     }
-
-    await db.update(schema.notifications)
-      .set({ read: true })
-      .where(eq(schema.notifications.userId, userId));
-    res.json({ success: true });
   });
 
   // Admin routes

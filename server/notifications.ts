@@ -1,6 +1,6 @@
 
 import { db } from "./db";
-import { notifications, users } from "@shared/schema";
+import { notifications } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
 export async function createNotification(data: {
