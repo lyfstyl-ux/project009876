@@ -17,7 +17,16 @@ import {
   ChevronLeft,
   ChevronRight,
   Coins,
+  PenTool,
+  Heart,
 } from "lucide-react";
+import { 
+  SiYoutube, 
+  SiTiktok, 
+  SiInstagram, 
+  SiMedium, 
+  SiX 
+} from "react-icons/si";
 import type { User } from "@shared/schema";
 import { useState, useMemo, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -61,16 +70,37 @@ export default function Home() {
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
   const isMobile = useIsMobile();
 
+  // Custom icon components for platforms not in lucide-react
+  const FarcasterIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.5 4h-17A1.5 1.5 0 002 5.5v13A1.5 1.5 0 003.5 20h17a1.5 1.5 0 001.5-1.5v-13A1.5 1.5 0 0020.5 4zm-8.53 11.94c-2.11 0-3.82-1.71-3.82-3.82s1.71-3.82 3.82-3.82 3.82 1.71 3.82 3.82-1.71 3.82-3.82 3.82z"/>
+    </svg>
+  );
+  
+  const GitcoinIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/>
+      <path d="M12 6c-3.309 0-6 2.691-6 6s2.691 6 6 6 6-2.691 6-6-2.691-6-6-6zm0 10c-2.206 0-4-1.794-4-4s1.794-4 4-4 4 1.794 4 4-1.794 4-4 4z"/>
+    </svg>
+  );
+  
+  const KarmaIcon = ({ className }: { className?: string }) => (
+    <Heart className={className} />
+  );
+
   const categories = [
     { id: "all", label: "All", Icon: Globe },
-    { id: "Music", label: "Music", Icon: Music },
-    { id: "Art", label: "Art", Icon: Palette },
-    { id: "Gaming", label: "Gaming", Icon: Gamepad2 },
-    { id: "Tech", label: "Tech", Icon: Code },
-    { id: "Fashion", label: "Fashion", Icon: Shirt },
-    { id: "Fitness", label: "Fitness", Icon: Dumbbell },
-    { id: "Education", label: "Education", Icon: GraduationCap },
-    { id: "Entertainment", label: "Entertainment", Icon: Tv },
+    { id: "farcaster", label: "Farcaster", Icon: FarcasterIcon },
+    { id: "gitcoin", label: "Gitcoin", Icon: GitcoinIcon },
+    { id: "karmagap", label: "KarmaGap", Icon: KarmaIcon },
+    { id: "publicgoods", label: "Public Goods", Icon: Coins },
+    { id: "music", label: "Music", Icon: Music },
+    { id: "tiktok", label: "TikTok", Icon: SiTiktok },
+    { id: "instagram", label: "Instagram", Icon: SiInstagram },
+    { id: "medium", label: "Medium", Icon: SiMedium },
+    { id: "giveth", label: "Giveth", Icon: Coins },
+    { id: "twitter", label: "Twitter", Icon: SiX },
+    { id: "blog", label: "Blog", Icon: PenTool },
   ];
 
   const mockCoins = [

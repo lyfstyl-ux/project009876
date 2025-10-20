@@ -16,13 +16,7 @@ import { Loader2, CheckCircle2, ExternalLink, MessageCircle, Coins } from "lucid
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatSmartCurrency } from "@/lib/utils";
 
-interface MobileTradeModalProps {
-  coin: Coin;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-type Coin = {
+type CoinProp = {
   id: string;
   name: string;
   symbol: string;
@@ -37,7 +31,14 @@ type Coin = {
   platform?: string;
   creator_wallet?: string;
   metadata?: any;
+  type?: string;
 };
+
+interface MobileTradeModalProps {
+  coin: CoinProp;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
 
 export default function MobileTradeModal({ coin, open, onOpenChange }: MobileTradeModalProps) {
   const { toast } = useToast();

@@ -23,8 +23,26 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { formatSmartCurrency } from "@/lib/utils";
 
+type CoinProp = {
+  id: string;
+  name: string;
+  symbol: string;
+  address: string;
+  image?: string;
+  marketCap?: string;
+  volume24h?: string;
+  holders?: number;
+  creator?: string;
+  createdAt?: string;
+  category?: string;
+  platform?: string;
+  creator_wallet?: string;
+  metadata?: any;
+  type?: string;
+};
+
 interface TradeModalDesktopProps {
-  coin: Coin;
+  coin: CoinProp;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
