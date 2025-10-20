@@ -17,40 +17,43 @@ export function TopCreatorsStories({
   const topCreators = creators.slice(0, limit);
 
   return (
-    <div className={cn("flex gap-5 overflow-x-auto scrollbar-hide pb-3 -mx-2 px-2", className)}>
-      {topCreators.map((creator, index) => (
-        <Link
-          key={creator.id}
-          href={`/profile/${creator.id}`}
-          className="flex flex-col items-center gap-2.5 flex-shrink-0 group"
-          data-testid={`link-story-creator-${creator.id}`}
-        >
-          <div className="relative">
-            {/* Instagram-style gradient ring with animation */}
-            <div className="p-[3px] rounded-full bg-gradient-to-tr from-primary via-secondary to-accent group-hover:scale-105 transition-transform duration-200">
-              <div className="p-[3px] rounded-full bg-background">
-                <Avatar className="h-20 w-20 ring-0">
-                  <AvatarImage src={creator.avatarUrl || undefined} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-foreground font-bold text-xl">
-                    {creator.displayName?.charAt(0) || creator.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+    <div className={cn("flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2", className)}>
+      {topCreators.map((creator, index) => {
+        // Calculate earnings (E1XP * 0.001)
+        const earnings = ((creator.e1xpPoints || 0) * 0.001).toFixed(2);
+        
+        return (
+          <Link
+            key={creator.id}
+            href={`/profile/${creator.id}`}
+            className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
+            data-testid={`link-story-creator-${creator.id}`}
+          >
+            <div className="relative">
+              {/* Instagram-style gradient ring with animation */}
+              <div className="p-[2px] rounded-full bg-gradient-to-tr from-primary via-secondary to-accent group-hover:scale-105 transition-transform duration-200">
+                <div className="p-[2px] rounded-full bg-background">
+                  <Avatar className="h-16 w-16 ring-0">
+                    <AvatarImage src={creator.avatarUrl || undefined} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-foreground font-bold text-lg">
+                      {creator.username?.charAt(0).toUpperCase() || '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </div>
+              
+              {/* Earnings badge */}
+              <div className="absolute -bottom-0.5 -right-0.5 min-w-[24px] h-5 px-1.5 rounded-full bg-green-500 flex items-center justify-center text-[10px] font-bold text-white shadow-lg ring-2 ring-background">
+                ${earnings}
               </div>
             </div>
             
-            {/* Rank badge for top 3 */}
-            {index < 3 && (
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-xs font-bold text-primary-foreground shadow-lg ring-2 ring-background">
-                {index + 1}
-              </div>
-            )}
-          </div>
-          
-          <span className="text-xs font-medium text-foreground max-w-[80px] truncate text-center group-hover:text-primary transition-colors">
-            {creator.displayName || creator.username}
-          </span>
-        </Link>
-      ))}
+            <span className="text-[11px] font-medium text-foreground max-w-[64px] truncate text-center group-hover:text-primary transition-colors">
+              {creator.username || 'Unknown'}
+            </span>
+          </Link>
+        );
+      })}
     </div>
   );
 }
