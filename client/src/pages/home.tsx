@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { CreatorCard } from "@/components/creator-card";
+import { CoinCard } from "@/components/coin-card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, TrendingUp, Music, Palette, Gamepad2, Code, Shirt, Dumbbell, GraduationCap, Tv, Globe, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sparkles, TrendingUp, Music, Palette, Gamepad2, Code, Shirt, Dumbbell, GraduationCap, Tv, Globe, ChevronLeft, ChevronRight, Coins } from "lucide-react";
 import type { User } from "@shared/schema";
 import { useState, useMemo, useRef } from "react";
 
@@ -29,6 +30,81 @@ export default function Home() {
     { id: "Entertainment", label: "Entertainment", Icon: Tv },
   ];
 
+  const mockCoins = [
+    {
+      id: "1",
+      name: "Creative Coin",
+      symbol: "CRTV",
+      address: "0x1234567890abcdef",
+      image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop",
+      marketCap: "125,000",
+      volume24h: "15,250",
+      holders: 342,
+      creator: "sarah_artist",
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "2",
+      name: "Music Token",
+      symbol: "MUSI",
+      address: "0xabcdef1234567890",
+      image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=400&fit=crop",
+      marketCap: "89,500",
+      volume24h: "8,920",
+      holders: 215,
+      creator: "dj_beats",
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "3",
+      name: "Gaming Gem",
+      symbol: "GAME",
+      address: "0xfedcba0987654321",
+      image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=400&fit=crop",
+      marketCap: "256,800",
+      volume24h: "32,100",
+      holders: 589,
+      creator: "pro_gamer",
+      createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "4",
+      name: "Tech Coin",
+      symbol: "TECH",
+      address: "0x9876543210fedcba",
+      image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=400&fit=crop",
+      marketCap: "178,900",
+      volume24h: "21,450",
+      holders: 412,
+      creator: "dev_master",
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "5",
+      name: "Fashion Token",
+      symbol: "FASH",
+      address: "0x5432109876fedcba",
+      image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&h=400&fit=crop",
+      marketCap: "142,300",
+      volume24h: "18,670",
+      holders: 367,
+      creator: "style_icon",
+      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "6",
+      name: "Fitness Fuel",
+      symbol: "FIT",
+      address: "0xabcd1234efgh5678",
+      image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop",
+      marketCap: "95,600",
+      volume24h: "11,230",
+      holders: 278,
+      creator: "fit_coach",
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+  ];
+
   const filteredCreators = useMemo(() => {
     if (!trendingCreators) return [];
     if (selectedCategory === "all") return trendingCreators;
@@ -49,26 +125,6 @@ export default function Home() {
 
   return (
     <div className="container max-w-5xl mx-auto px-4 py-8 space-y-12">
-      {/* Hero Section */}
-      <section className="text-center space-y-4 py-12">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-          Transform Your Content Into
-          <span className="text-primary"> Tradeable Assets</span>
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Mint creator coins, earn passive income, and build your Web3 creator economy on Base
-        </p>
-        <div className="flex gap-4 justify-center pt-4">
-          <Button size="lg" data-testid="button-get-started">
-            <Sparkles className="h-5 w-5 mr-2" />
-            Get Started
-          </Button>
-          <Button size="lg" variant="outline" data-testid="button-explore">
-            Explore Creators
-          </Button>
-        </div>
-      </section>
-
       {/* Category Chips */}
       <section className="relative group">
         {/* Left Arrow - Hidden on mobile */}
@@ -115,6 +171,25 @@ export default function Home() {
         >
           <ChevronRight className="w-4 h-4" />
         </button>
+      </section>
+
+      {/* Trending Coins */}
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Coins className="h-6 w-6 text-primary" />
+            <h2 className="text-2xl font-bold">Trending Coins</h2>
+          </div>
+          <Button variant="ghost" size="sm" data-testid="button-view-all-coins">
+            View All
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          {mockCoins.map((coin) => (
+            <CoinCard key={coin.id} coin={coin} />
+          ))}
+        </div>
       </section>
 
       {/* Trending Creators */}
