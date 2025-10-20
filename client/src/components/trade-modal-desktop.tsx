@@ -258,10 +258,10 @@ export default function TradeModalDesktop({ coin, open, onOpenChange }: TradeMod
               </div>
             </div>
 
-            <div className="flex-1 min-h-[200px] relative px-4">
+            <div className="flex-1 min-h-[200px] relative">
               <Carousel className="w-full h-full" opts={{ loop: false }} setApi={setCarouselApi}>
                 <CarouselContent className="h-full">
-                  <CarouselItem className="h-full">
+                  <CarouselItem className="h-full px-2">
                     <div className="h-full flex items-center justify-center bg-gradient-to-br from-muted/10 to-muted/5 rounded-lg overflow-hidden">
                       {displayImage ? (
                         <img src={displayImage} alt={coin.name} className="max-w-full max-h-full object-contain" />
@@ -273,10 +273,70 @@ export default function TradeModalDesktop({ coin, open, onOpenChange }: TradeMod
                       )}
                     </div>
                   </CarouselItem>
+
+                  <CarouselItem className="h-full px-2">
+                    <div className="h-full flex flex-col bg-gradient-to-br from-muted/10 to-muted/5 rounded-lg p-3">
+                      <div className="flex-1 min-h-0">
+                        {chartData.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                              <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" style={{ fontSize: '10px' }} />
+                              <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '10px' }} />
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: 'hsl(var(--background))',
+                                  border: '1px solid hsl(var(--border))',
+                                  borderRadius: '8px',
+                                }}
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="price"
+                                stroke="hsl(var(--primary))"
+                                strokeWidth={2}
+                                dot={false}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                            <TrendingUp className="w-12 h-12 mb-2 opacity-30" />
+                            <p className="text-xs">No chart data available</p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-border/30">
+                        {(['1H', '1D', 'W', 'M', 'All'] as const).map((tf) => (
+                          <Button
+                            key={tf}
+                            variant={timeframe === tf ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setTimeframe(tf)}
+                            className="h-6 text-xs px-2"
+                          >
+                            {tf}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </CarouselItem>
                 </CarouselContent>
                 <CarouselPrevious className="left-0 bg-background/80 hover:bg-background" />
                 <CarouselNext className="right-0 bg-background/80 hover:bg-background" />
               </Carousel>
+
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
+                {[0, 1].map((index) => (
+                  <div
+                    key={index}
+                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                      currentSlide === index ? 'bg-primary' : 'bg-muted-foreground/30'
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
@@ -295,6 +355,8 @@ export default function TradeModalDesktop({ coin, open, onOpenChange }: TradeMod
                 <TabsTrigger value="trade" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2">Trade</TabsTrigger>
                 <TabsTrigger value="comments" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2">Comments</TabsTrigger>
                 <TabsTrigger value="holders" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2">Holders</TabsTrigger>
+                <TabsTrigger value="activity" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2">Activity</TabsTrigger>
+                <TabsTrigger value="details" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2">Details</TabsTrigger>
               </TabsList>
 
               <TabsContent value="trade" className="flex-1 px-4 pb-4 mt-0 pt-3 overflow-y-auto">
@@ -348,13 +410,109 @@ export default function TradeModalDesktop({ coin, open, onOpenChange }: TradeMod
 
               <TabsContent value="holders" className="flex-1 px-4 pb-4 overflow-y-auto">
                 <ScrollArea className="flex-1">
-                  {holders.map((holder, idx) => (
-                    <div key={holder.address} className="flex justify-between p-2 border-b">
-                      <span>#{idx + 1} {formatAddress(holder.address)}</span>
-                      <span>{holder.percentage.toFixed(2)}%</span>
+                  {holders.length > 0 ? (
+                    holders.map((holder, idx) => (
+                      <div key={holder.address} className="flex items-center justify-between p-3 border-b border-border/30">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                            <span className="text-xs font-semibold">{idx + 1}</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{holder.profile || formatAddress(holder.address)}</p>
+                            {holder.profile && <p className="text-xs text-muted-foreground">{formatAddress(holder.address)}</p>}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold">{holder.percentage.toFixed(2)}%</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                      <Users className="w-12 h-12 text-muted-foreground/30 mb-3" />
+                      <p className="text-sm text-muted-foreground">No holders data available</p>
                     </div>
-                  ))}
+                  )}
                 </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="activity" className="flex-1 px-4 pb-4 overflow-y-auto">
+                <ScrollArea className="flex-1">
+                  {/* Mock activity data - replace with real trading activity */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-green-500/10 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center">
+                          <img src={displayImage || "/placeholder.svg"} alt="user" className="w-full h-full rounded-full object-cover" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{formatAddress(coin.creator_wallet)}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-semibold text-green-500 bg-green-500/20 px-2 py-1 rounded">Buy</span>
+                        <p className="text-xs text-muted-foreground mt-1">1.8m · $0.25 · 3d</p>
+                      </div>
+                    </div>
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="details" className="flex-1 px-4 pb-4 overflow-y-auto">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <ActivityIcon className="w-4 h-4" />
+                      <span className="text-sm">Created</span>
+                    </div>
+                    <span className="text-sm font-medium">{coin.createdAt ? new Date(coin.createdAt).toLocaleDateString() : 'Unknown'}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Copy className="w-4 h-4" />
+                      <span className="text-sm">Contract address</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{formatAddress(coin.address)}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => copyToClipboard(coin.address)}
+                      >
+                        {copiedAddress ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Coins className="w-4 h-4" />
+                      <span className="text-sm">Chain</span>
+                    </div>
+                    <span className="text-sm font-medium flex items-center gap-1">
+                      <span className="w-4 h-4 rounded-full bg-blue-500"></span>
+                      Base
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Users className="w-4 h-4" />
+                      <span className="text-sm">Pair</span>
+                    </div>
+                    <span className="text-sm font-medium">@{coin.symbol || 'Unknown'}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Info className="w-4 h-4" />
+                      <span className="text-sm">Media</span>
+                    </div>
+                    <span className="text-sm font-medium">{displayImage ? 'JPG' : 'None'}</span>
+                  </div>
+                </div>
               </TabsContent>
             </Tabs>
           </div>

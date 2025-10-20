@@ -128,9 +128,11 @@ export default function MobileTradeModal({ coin, open, onOpenChange }: MobileTra
         </DrawerHeader>
 
         <Tabs defaultValue="trade" className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="w-full">
+          <TabsList className="w-full grid grid-cols-4 gap-1">
             <TabsTrigger value="trade">Trade</TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="details">Details</TabsTrigger>
           </TabsList>
 
           <TabsContent value="trade" className="px-4 pb-6">
@@ -174,6 +176,27 @@ export default function MobileTradeModal({ coin, open, onOpenChange }: MobileTra
                 </div>
               ))}
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="activity" className="px-4 pb-6">
+            <ScrollArea className="h-64">
+              <p className="text-sm text-muted-foreground text-center py-8">Activity data coming soon</p>
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="details" className="px-4 pb-6 space-y-3">
+            <div className="flex justify-between p-3 bg-muted/20 rounded">
+              <span className="text-sm text-muted-foreground">Created</span>
+              <span className="text-sm font-medium">{coin.createdAt ? new Date(coin.createdAt).toLocaleDateString() : 'Unknown'}</span>
+            </div>
+            <div className="flex justify-between p-3 bg-muted/20 rounded">
+              <span className="text-sm text-muted-foreground">Contract</span>
+              <span className="text-sm font-medium">{coin.address.slice(0, 6)}...{coin.address.slice(-4)}</span>
+            </div>
+            <div className="flex justify-between p-3 bg-muted/20 rounded">
+              <span className="text-sm text-muted-foreground">Chain</span>
+              <span className="text-sm font-medium">Base</span>
+            </div>
           </TabsContent>
         </Tabs>
       </DrawerContent>
