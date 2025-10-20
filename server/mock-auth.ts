@@ -8,10 +8,31 @@ let mockCurrentUserId: string | null = null;
 
 export async function initMockAuth() {
   // Get the first user from the database as our mock current user
-  const users = await storage.getTrendingCreators(1);
-  if (users.length > 0) {
-    mockCurrentUserId = users[0].id;
-    console.log(`🔐 Mock auth initialized with user: ${users[0].username} (${mockCurrentUserId})`);
+  let retries = 3;
+  let lastError;
+  
+  while (retries > 0) {
+    try {
+      const users = await storage.getTrendingCreators(1);
+      if (users.length > 0) {
+        mockCurrentUserId = users[0].id;
+        console.log(`🔐 Mock auth initialized with user: ${users[0].username} (${mockCurrentUserId})`);
+        return;
+      }
+      break;
+    } catch (error) {
+      lastError = error;
+      retries--;
+      if (retries > 0) {
+        console.log(`⚠️ Database connection failed, retrying... (${retries} attempts left)`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+      }
+    }
+  }
+  
+  if (lastError) {
+    console.error('❌ Failed to initialize mock auth after multiple attempts:', lastError);
+    throw lastError;
   }
 }
 
