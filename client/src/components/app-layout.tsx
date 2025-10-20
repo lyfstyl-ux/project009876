@@ -39,6 +39,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const secondaryNavItems = [
     { icon: Users, label: "Connections", path: "/connections" },
+    { icon: TrendingUpIcon, label: "Creators", path: "/creators" },
     { icon: Users, label: "Groups", path: "/groups" },
     { icon: Zap, label: "Streaks", path: "/streaks" },
     { icon: TrendingUp, label: "Admin", path: "/admin" },

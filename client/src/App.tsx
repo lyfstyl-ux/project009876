@@ -16,6 +16,7 @@ import Connections from "@/pages/connections";
 import Groups from "@/pages/groups";
 import Streaks from "@/pages/streaks";
 import Admin from "@/pages/admin";
+import Creators from "@/pages/creators";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -31,6 +32,7 @@ function Router() {
         <Route path="/groups" component={Groups} />
         <Route path="/streaks" component={Streaks} />
         <Route path="/admin" component={Admin} />
+        <Route path="/creators" component={Creators} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

@@ -31,11 +31,6 @@ export default function Profile() {
     location: "",
   });
 
-  const { data: referralStats } = useQuery({
-    queryKey: ["/api/referral/stats"],
-    enabled: isOwnProfile && authenticated,
-  });
-
   const BADGE_INFO: Record<string, { name: string; icon: string; color: string }> = {
     newcomer: { name: "Newcomer", icon: "🌱", color: "bg-green-500" },
     explorer: { name: "Explorer", icon: "🔍", color: "bg-blue-500" },
@@ -50,6 +45,11 @@ export default function Profile() {
   // Determine if viewing own profile
   const isOwnProfile = !id || (privyUser?.wallet?.address && id === privyUser.wallet.address);
   const profileUserId = id || privyUser?.wallet?.address;
+
+  const { data: referralStats } = useQuery({
+    queryKey: ["/api/referral/stats"],
+    enabled: isOwnProfile && authenticated,
+  });
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/users", profileUserId],
