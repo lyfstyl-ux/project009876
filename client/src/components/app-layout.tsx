@@ -1,12 +1,13 @@
 
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Search, PlusCircle, MessageCircle, User, Users, Zap, TrendingUp, Coins, TrendingUp as TrendingUpIcon } from "lucide-react";
+import { Search, PlusCircle, User, TrendingUp, Coins, Compass } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { NotificationBell } from "./notification-bell";
 import { UserMenu } from "./user-menu";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
+import { usePrivy } from "@privy-io/react-auth";
 import {
   Sidebar,
   SidebarContent,
@@ -24,25 +25,26 @@ import {
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+  const { authenticated } = usePrivy();
 
   const { data: stats } = useQuery({
     queryKey: ["/api/admin/stats"],
   });
 
   const navItems = [
-    { icon: Home, label: "Feed", path: "/", testId: "nav-feed" },
-    { icon: Search, label: "Search", path: "/search", testId: "nav-search" },
-    { icon: PlusCircle, label: "Create", path: "/create", testId: "nav-create" },
-    { icon: MessageCircle, label: "Inbox", path: "/inbox", testId: "nav-inbox" },
-    { icon: User, label: "Profile", path: "/profile", testId: "nav-profile" },
+    { emoji: "🧭", label: "Feed", path: "/", testId: "nav-feed" },
+    { emoji: "🔍", label: "Search", path: "/search", testId: "nav-search" },
+    { emoji: "➕", label: "Create", path: "/create", testId: "nav-create" },
+    { emoji: "💬", label: "Inbox", path: "/inbox", testId: "nav-inbox", requireAuth: true },
+    { emoji: "👤", label: "Profile", path: "/profile", testId: "nav-profile" },
   ];
 
   const secondaryNavItems = [
-    { icon: Users, label: "Connections", path: "/connections" },
-    { icon: TrendingUpIcon, label: "Creators", path: "/creators" },
-    { icon: Users, label: "Groups", path: "/groups" },
-    { icon: Zap, label: "Streaks", path: "/streaks" },
-    { icon: TrendingUp, label: "Admin", path: "/admin" },
+    { emoji: "🤝", label: "Connections", path: "/connections", requireAuth: true },
+    { emoji: "🌟", label: "Creators", path: "/creators" },
+    { emoji: "👥", label: "Groups", path: "/groups" },
+    { emoji: "🔥", label: "Streaks", path: "/streaks", requireAuth: true },
+    { emoji: "⚡", label: "Admin", path: "/admin" },
   ];
 
   return (
@@ -61,25 +63,26 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </SidebarGroupLabel>
               <SidebarGroupContent className="px-2">
                 <SidebarMenu>
-                  {navItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = location === item.path;
-                    return (
-                      <SidebarMenuItem key={item.path}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive}
-                          tooltip={item.label}
-                          className="w-full justify-start"
-                        >
-                          <Link href={item.path} data-testid={item.testId} className="flex items-center gap-3">
-                            <Icon className="h-5 w-5 shrink-0" />
-                            <span className="flex-1">{item.label}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
+                  {navItems
+                    .filter(item => !item.requireAuth || authenticated)
+                    .map((item) => {
+                      const isActive = location === item.path;
+                      return (
+                        <SidebarMenuItem key={item.path}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isActive}
+                            tooltip={item.label}
+                            className="w-full justify-start"
+                          >
+                            <Link href={item.path} data-testid={item.testId} className="flex items-center gap-3">
+                              <span className="text-xl shrink-0">{item.emoji}</span>
+                              <span className="flex-1">{item.label}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -88,25 +91,26 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <SidebarGroupLabel className="px-2">More</SidebarGroupLabel>
               <SidebarGroupContent className="px-2">
                 <SidebarMenu>
-                  {secondaryNavItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = location === item.path;
-                    return (
-                      <SidebarMenuItem key={item.path}>
-                        <SidebarMenuButton 
-                          asChild 
-                          isActive={isActive} 
-                          tooltip={item.label}
-                          className="w-full justify-start"
-                        >
-                          <Link href={item.path} className="flex items-center gap-3">
-                            <Icon className="h-5 w-5 shrink-0" />
-                            <span className="flex-1">{item.label}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
+                  {secondaryNavItems
+                    .filter(item => !item.requireAuth || authenticated)
+                    .map((item) => {
+                      const isActive = location === item.path;
+                      return (
+                        <SidebarMenuItem key={item.path}>
+                          <SidebarMenuButton 
+                            asChild 
+                            isActive={isActive} 
+                            tooltip={item.label}
+                            className="w-full justify-start"
+                          >
+                            <Link href={item.path} className="flex items-center gap-3">
+                              <span className="text-xl shrink-0">{item.emoji}</span>
+                              <span className="flex-1">{item.label}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -179,28 +183,29 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Mobile Bottom Navigation */}
           <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
             <div className="flex items-center justify-around h-14">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location === item.path;
-                return (
-                  <Link
-                    key={item.path}
-                    href={item.path}
-                    data-testid={item.testId}
-                  >
-                    <button
-                      className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors ${
-                        isActive
-                          ? "text-primary"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
+              {navItems
+                .filter(item => !item.requireAuth || authenticated)
+                .map((item) => {
+                  const isActive = location === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      data-testid={item.testId}
                     >
-                      <Icon className="h-5 w-5" />
-                      <span className="text-xs">{item.label}</span>
-                    </button>
-                  </Link>
-                );
-              })}
+                      <button
+                        className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors ${
+                          isActive
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <span className="text-xl">{item.emoji}</span>
+                        <span className="text-xs">{item.label}</span>
+                      </button>
+                    </Link>
+                  );
+                })}
             </div>
           </nav>
         </SidebarInset>
