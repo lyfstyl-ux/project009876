@@ -1,10 +1,38 @@
+// ensure .env is loaded in development so process.env.DATABASE_URL is available
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load the appropriate .env file based on NODE_ENV
+const envFile = process.env.NODE_ENV === 'development' ? '.env.development' : '.env';
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+
+// Database URL should come from Replit Secrets, not .env files
+if (!process.env.DATABASE_URL) {
+  console.error('DATABASE_URL not found. Make sure Replit PostgreSQL database is provisioned.');
+}
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { storage } from "./supabase-storage";
+import { createE1XPRouter } from './routes/e1xp';
+import { autoMigrateOnStartup } from "./migrate-old-data";
 import { setupVite, serveStatic, log } from "./vite";
-import { initMockAuth } from "./mock-auth";
+import { initTelegramBot } from "./telegram-bot";
+import { ActivityTrackerCron } from "./activity-tracker-cron";
+import { base } from "viem/chains";
 
 const app = express();
-app.use(express.json());
+
+declare module 'http' {
+  interface IncomingMessage {
+    rawBody: unknown
+  }
+}
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
@@ -38,23 +66,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize mock auth (TODO: Replace with Privy)
-  try {
-    await initMockAuth();
-  } catch (error) {
-    console.error('⚠️ Failed to initialize mock auth, continuing without it:', error);
-    console.log('🔧 The server will start, but database-dependent features may not work.');
-  }
-  
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+  // Initialize Telegram bot
+  await initTelegramBot();
 
-    res.status(status).json({ message });
-    throw err;
-  });
+  // Start trending notifications
+  const { startTrendingNotifications } = await import('./trending-notifications');
+  startTrendingNotifications();
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
@@ -77,4 +96,39 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
   });
+
+  // Run automatic migration on startup
+  try {
+    await autoMigrateOnStartup();
+  } catch (error) {
+    console.error("Failed to run auto migration:", error);
+  }
+
+  // Initialize and start activity tracker cron job
+  const activityTrackerCron = new ActivityTrackerCron(storage, base.id);
+  activityTrackerCron.start();
+  log(`Activity tracker cron started with schedule: ${activityTrackerCron.getSchedule()}`);
+
+  // Initialize and start notification cron jobs
+  const { notificationCron } = await import('./notification-cron');
+  notificationCron.start();
+  log(`Notification cron jobs started: ${notificationCron.getSchedules().length} jobs`);
+
+  // Start streak reminder cron service
+  const { startStreakReminderCron } = await import('./streak-reminder-cron');
+  startStreakReminderCron();
+  log(`Streak reminder cron started.`);
+
+  // Graceful shutdown
+  const shutdown = async (signal: string) => {
+    console.log(`\n${signal} received, shutting down gracefully...`);
+    const { stopTelegramBot } = await import('./telegram-bot');
+    await stopTelegramBot();
+    activityTrackerCron.stop();
+    notificationCron.stop();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
 })();

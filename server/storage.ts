@@ -1,322 +1,416 @@
-// Referenced from javascript_database blueprint integration
+import { db } from "./db";
+import { eq, desc, and } from "drizzle-orm";
 import {
-  users,
-  projects,
   coins,
-  messages,
-  connections,
-  groups,
-  groupMemberships,
+  scrapedContent,
+  rewards,
+  creators,
+  comments,
+  follows,
+  referrals,
   loginStreaks,
-  bookmarks,
-  type User,
-  type InsertUser,
-  type Project,
-  type InsertProject,
   type Coin,
   type InsertCoin,
-  type Message,
-  type InsertMessage,
-  type Connection,
-  type InsertConnection,
-  type Group,
-  type InsertGroup,
-  type GroupMembership,
-  type InsertGroupMembership,
+  type UpdateCoin,
+  type ScrapedContent,
+  type InsertScrapedContent,
+  type Reward,
+  type InsertReward,
+  type Creator,
+  type InsertCreator,
+  type UpdateCreator,
+  type Comment,
+  type InsertComment,
+  type Follow,
+  type InsertFollow,
+  type Referral,
+  type InsertReferral,
   type LoginStreak,
   type InsertLoginStreak,
+  type UpdateLoginStreak,
+  type Notification,
+  type NotificationType,
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, desc, and, or, like, sql } from "drizzle-orm";
 
-export interface IStorage {
-  // Users
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  getUserByPrivyId(privyId: string): Promise<User | undefined>;
-  getUserByWallet(walletAddress: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: string, user: Partial<User>): Promise<User | undefined>;
-  searchUsers(query: string, filters?: any): Promise<User[]>;
-  getTrendingCreators(limit?: number): Promise<User[]>;
-
-  // Projects
-  getProject(id: string): Promise<Project | undefined>;
-  getProjectsByUser(userId: string): Promise<Project[]>;
-  createProject(project: InsertProject): Promise<Project>;
-  updateProject(id: string, project: Partial<Project>): Promise<Project | undefined>;
-  getFeaturedProjects(limit?: number): Promise<Project[]>;
-
-  // Coins
-  getCoin(id: string): Promise<Coin | undefined>;
-  getCoinsByUser(userId: string): Promise<Coin[]>;
-  createCoin(coin: InsertCoin): Promise<Coin>;
-  updateCoin(id: string, coin: Partial<Coin>): Promise<Coin | undefined>;
-
-  // Messages
-  getMessage(id: string): Promise<Message | undefined>;
-  getConversations(userId: string): Promise<any[]>;
-  getMessagesBetween(userId1: string, userId2: string): Promise<Message[]>;
-  createMessage(message: InsertMessage): Promise<Message>;
-  markMessageAsRead(id: string): Promise<void>;
-
-  // Connections
-  getConnection(id: string): Promise<Connection | undefined>;
-  getConnectionsByUser(userId: string): Promise<Connection[]>;
-  createConnection(connection: InsertConnection): Promise<Connection>;
-  updateConnection(id: string, connection: Partial<Connection>): Promise<Connection | undefined>;
-  getConnectionRequests(userId: string): Promise<Connection[]>;
-
-  // Groups
-  getGroup(id: string): Promise<Group | undefined>;
-  getGroups(): Promise<Group[]>;
-  createGroup(group: InsertGroup): Promise<Group>;
-  updateGroup(id: string, group: Partial<Group>): Promise<Group | undefined>;
-  joinGroup(groupId: string, userId: string): Promise<GroupMembership>;
-
-  // Login Streaks
-  getLoginStreak(userId: string): Promise<LoginStreak | undefined>;
-  updateLoginStreak(userId: string, streak: Partial<LoginStreak>): Promise<LoginStreak | undefined>;
-  createLoginStreak(streak: InsertLoginStreak): Promise<LoginStreak>;
+// Type for user notifications with creator info
+export interface UserNotification {
+  id: string;
+  creator_id: string;
+  type: string;
+  title: string;
+  message: string;
+  metadata?: any;
+  read: boolean;
+  created_at: string;
+  updated_at: string;
+  creator?: {
+    address: string;
+    name: string | null;
+    avatar: string | null;
+  };
 }
 
-export class DatabaseStorage implements IStorage {
-  // Users
-  async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+export type ModerationType = 'warn' | 'ban' | 'unban';
+
+export class Storage {
+  // ===== COINS =====
+  async getAllCoins(): Promise<Coin[]> {
+    return await db.select().from(coins).orderBy(desc(coins.createdAt));
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
-  }
-
-  async getUserByPrivyId(privyId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.privyId, privyId));
-    return user || undefined;
-  }
-
-  async getUserByWallet(walletAddress: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.walletAddress, walletAddress));
-    return user || undefined;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(insertUser).returning();
+  async getCoin(id: string): Promise<Coin | undefined> {
+    const result = await db.select().from(coins).where(eq(coins.id, id)).limit(1);
     return result[0];
   }
 
-  async updateUser(id: string, updateData: Partial<User>): Promise<User | undefined> {
-    const [user] = await db.update(users).set(updateData).where(eq(users.id, id)).returning();
-    return user || undefined;
+  async getCoinByAddress(address: string): Promise<Coin | undefined> {
+    const result = await db.select().from(coins).where(eq(coins.address, address)).limit(1);
+    return result[0];
   }
 
-  async searchUsers(query: string, filters?: any): Promise<User[]> {
-    if (query) {
-      return await db.select().from(users).where(
-        or(
-          like(users.username, `%${query}%`),
-          like(users.displayName, `%${query}%`),
-          like(users.bio, `%${query}%`)
-        )
-      ).limit(50);
-    }
-    
-    return await db.select().from(users).limit(50);
-  }
-
-  async getTrendingCreators(limit: number = 12): Promise<User[]> {
+  async getCoinsByCreator(creator: string): Promise<Coin[]> {
     return await db
       .select()
-      .from(users)
-      .orderBy(desc(users.totalConnections))
-      .limit(limit);
-  }
-
-  // Projects
-  async getProject(id: string): Promise<Project | undefined> {
-    const [project] = await db.select().from(projects).where(eq(projects.id, id));
-    return project || undefined;
-  }
-
-  async getProjectsByUser(userId: string): Promise<Project[]> {
-    return await db.select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt));
-  }
-
-  async createProject(insertProject: InsertProject): Promise<Project> {
-    const [project] = await db.insert(projects).values(insertProject).returning();
-    return project;
-  }
-
-  async updateProject(id: string, updateData: Partial<Project>): Promise<Project | undefined> {
-    const [project] = await db.update(projects).set(updateData).where(eq(projects.id, id)).returning();
-    return project || undefined;
-  }
-
-  async getFeaturedProjects(limit: number = 8): Promise<Project[]> {
-    return await db
-      .select()
-      .from(projects)
-      .orderBy(desc(projects.totalViews))
-      .limit(limit);
-  }
-
-  // Coins
-  async getCoin(id: string): Promise<Coin | undefined> {
-    const [coin] = await db.select().from(coins).where(eq(coins.id, id));
-    return coin || undefined;
-  }
-
-  async getCoinsByUser(userId: string): Promise<Coin[]> {
-    return await db.select().from(coins).where(eq(coins.userId, userId)).orderBy(desc(coins.createdAt));
+      .from(coins)
+      .where(eq(coins.creator_wallet, creator))
+      .orderBy(desc(coins.createdAt));
   }
 
   async createCoin(insertCoin: InsertCoin): Promise<Coin> {
-    const [coin] = await db.insert(coins).values(insertCoin).returning();
-    return coin;
+    const result = await db.insert(coins).values(insertCoin).returning();
+    return result[0];
   }
 
-  async updateCoin(id: string, updateData: Partial<Coin>): Promise<Coin | undefined> {
-    const [coin] = await db.update(coins).set(updateData).where(eq(coins.id, id)).returning();
-    return coin || undefined;
-  }
-
-  // Messages
-  async getMessage(id: string): Promise<Message | undefined> {
-    const [message] = await db.select().from(messages).where(eq(messages.id, id));
-    return message || undefined;
-  }
-
-  async getConversations(userId: string): Promise<any[]> {
-    // Get unique conversations with last message
-    const conversations = await db
-      .select()
-      .from(messages)
-      .where(
-        or(
-          eq(messages.senderId, userId),
-          eq(messages.recipientId, userId)
-        )
-      )
-      .orderBy(desc(messages.createdAt))
-      .limit(50);
-
-    return conversations;
-  }
-
-  async getMessagesBetween(userId1: string, userId2: string): Promise<Message[]> {
-    return await db
-      .select()
-      .from(messages)
-      .where(
-        or(
-          and(eq(messages.senderId, userId1), eq(messages.recipientId, userId2)),
-          and(eq(messages.senderId, userId2), eq(messages.recipientId, userId1))
-        )
-      )
-      .orderBy(messages.createdAt);
-  }
-
-  async createMessage(insertMessage: InsertMessage): Promise<Message> {
-    const [message] = await db.insert(messages).values(insertMessage).returning();
-    return message;
-  }
-
-  async markMessageAsRead(id: string): Promise<void> {
-    await db.update(messages).set({ isRead: true }).where(eq(messages.id, id));
-  }
-
-  // Connections
-  async getConnection(id: string): Promise<Connection | undefined> {
-    const [connection] = await db.select().from(connections).where(eq(connections.id, id));
-    return connection || undefined;
-  }
-
-  async getConnectionsByUser(userId: string): Promise<Connection[]> {
-    return await db
-      .select()
-      .from(connections)
-      .where(
-        and(
-          or(eq(connections.userId, userId), eq(connections.connectedUserId, userId)),
-          eq(connections.status, "connected")
-        )
-      );
-  }
-
-  async createConnection(insertConnection: InsertConnection): Promise<Connection> {
-    const [connection] = await db.insert(connections).values(insertConnection).returning();
-    return connection;
-  }
-
-  async updateConnection(id: string, updateData: Partial<Connection>): Promise<Connection | undefined> {
-    const [connection] = await db.update(connections).set(updateData).where(eq(connections.id, id)).returning();
-    return connection || undefined;
-  }
-
-  async getConnectionRequests(userId: string): Promise<Connection[]> {
-    return await db
-      .select()
-      .from(connections)
-      .where(
-        and(
-          eq(connections.connectedUserId, userId),
-          eq(connections.status, "pending")
-        )
-      );
-  }
-
-  // Groups
-  async getGroup(id: string): Promise<Group | undefined> {
-    const [group] = await db.select().from(groups).where(eq(groups.id, id));
-    return group || undefined;
-  }
-
-  async getGroups(): Promise<Group[]> {
-    return await db.select().from(groups).orderBy(desc(groups.memberCount)).limit(50);
-  }
-
-  async createGroup(insertGroup: InsertGroup): Promise<Group> {
-    const [group] = await db.insert(groups).values(insertGroup).returning();
-    return group;
-  }
-
-  async updateGroup(id: string, updateData: Partial<Group>): Promise<Group | undefined> {
-    const [group] = await db.update(groups).set(updateData).where(eq(groups.id, id)).returning();
-    return group || undefined;
-  }
-
-  async joinGroup(groupId: string, userId: string): Promise<GroupMembership> {
-    const [membership] = await db
-      .insert(groupMemberships)
-      .values({ groupId, userId, role: "member" })
+  async updateCoin(id: string, update: UpdateCoin): Promise<Coin | undefined> {
+    const result = await db
+      .update(coins)
+      .set(update)
+      .where(eq(coins.id, id))
       .returning();
+    return result[0];
+  }
 
-    // Update member count
+  // ===== SCRAPED CONTENT =====
+  async getScrapedContent(id: string): Promise<ScrapedContent | undefined> {
+    const result = await db
+      .select()
+      .from(scrapedContent)
+      .where(eq(scrapedContent.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async createScrapedContent(content: InsertScrapedContent): Promise<ScrapedContent> {
+    const result = await db.insert(scrapedContent).values(content).returning();
+    return result[0];
+  }
+
+  async getAllScrapedContent(): Promise<ScrapedContent[]> {
+    return await db.select().from(scrapedContent).orderBy(desc(scrapedContent.scrapedAt));
+  }
+
+  // ===== REWARDS =====
+  async getReward(id: string): Promise<Reward | undefined> {
+    const result = await db.select().from(rewards).where(eq(rewards.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createReward(reward: InsertReward): Promise<Reward> {
+    const result = await db.insert(rewards).values(reward).returning();
+    return result[0];
+  }
+
+  async getAllRewards(): Promise<Reward[]> {
+    return await db.select().from(rewards).orderBy(desc(rewards.createdAt));
+  }
+
+  async getRewardsByCoin(coinAddress: string): Promise<Reward[]> {
+    return await db
+      .select()
+      .from(rewards)
+      .where(eq(rewards.coinAddress, coinAddress))
+      .orderBy(desc(rewards.createdAt));
+  }
+
+  async getRewardsByRecipient(recipientAddress: string): Promise<Reward[]> {
+    return await db
+      .select()
+      .from(rewards)
+      .where(eq(rewards.recipientAddress, recipientAddress))
+      .orderBy(desc(rewards.createdAt));
+  }
+
+  // ===== CREATORS =====
+  async getCreator(id: string): Promise<Creator | undefined> {
+    const result = await db.select().from(creators).where(eq(creators.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getCreatorByAddress(address: string): Promise<Creator | undefined> {
+    const result = await db
+      .select()
+      .from(creators)
+      .where(eq(creators.address, address))
+      .limit(1);
+    return result[0];
+  }
+
+  async getCreatorByReferralCode(referralCode: string): Promise<Creator | undefined> {
+    const result = await db
+      .select()
+      .from(creators)
+      .where(eq(creators.referralCode, referralCode))
+      .limit(1);
+    return result[0];
+  }
+
+  async createCreator(creator: InsertCreator): Promise<Creator> {
+    const result = await db.insert(creators).values(creator).returning();
+    return result[0];
+  }
+
+  async updateCreator(id: string, update: UpdateCreator): Promise<Creator | undefined> {
+    const result = await db
+      .update(creators)
+      .set({ ...update, updatedAt: new Date() })
+      .where(eq(creators.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async addPoints(creatorId: string, amount: number, reason: string): Promise<void> {
+    const creator = await this.getCreator(creatorId);
+    if (!creator) return;
+
+    const currentPoints = parseInt(creator.points) || 0;
+    const newPoints = currentPoints + amount;
+
     await db
-      .update(groups)
-      .set({ memberCount: sql`${groups.memberCount} + 1` })
-      .where(eq(groups.id, groupId));
-
-    return membership;
+      .update(creators)
+      .set({ points: newPoints.toString(), updatedAt: new Date() })
+      .where(eq(creators.id, creatorId));
   }
 
-  // Login Streaks
-  async getLoginStreak(userId: string): Promise<LoginStreak | undefined> {
-    const [streak] = await db.select().from(loginStreaks).where(eq(loginStreaks.userId, userId));
-    return streak || undefined;
+  async getAllCreators(): Promise<Creator[]> {
+    return await db.select().from(creators).orderBy(desc(creators.createdAt));
   }
 
-  async updateLoginStreak(userId: string, updateData: Partial<LoginStreak>): Promise<LoginStreak | undefined> {
-    const [streak] = await db.update(loginStreaks).set(updateData).where(eq(loginStreaks.userId, userId)).returning();
-    return streak || undefined;
+  async getTopCreators(): Promise<Creator[]> {
+    return await db.select().from(creators).orderBy(desc(creators.totalVolume)).limit(10);
   }
 
-  async createLoginStreak(insertStreak: InsertLoginStreak): Promise<LoginStreak> {
-    const result = await db.insert(loginStreaks).values(insertStreak).returning();
+  async awardPoints(
+    creatorId: string,
+    amount: number,
+    reason: string,
+    type: NotificationType
+  ): Promise<void> {
+    await this.addPoints(creatorId, amount, reason);
+  }
+
+  // Stub methods for daily points (not implemented yet - would need additional table)
+  async getDailyPoints(creatorId: string): Promise<{ claimed: boolean; streak: number }> {
+    return { claimed: false, streak: 0 };
+  }
+
+  async claimDailyPoints(creatorId: string): Promise<number> {
+    return 0;
+  }
+
+  async getDailyPointsStatus(
+    creatorId: string
+  ): Promise<{ claimed: boolean; streak: number; nextClaimAmount: number }> {
+    return { claimed: false, streak: 0, nextClaimAmount: 0 };
+  }
+
+  // ===== NOTIFICATIONS (Stub - would need notification table in schema) =====
+  async createNotification(notification: {
+    creator_id: string;
+    type: string;
+    title: string;
+    message: string;
+    metadata?: any;
+  }): Promise<Notification> {
+    // This would need a notifications table in the schema
+    // For now, return a stub
+    return {
+      id: crypto.randomUUID(),
+      creator_id: notification.creator_id,
+      type: notification.type as NotificationType,
+      title: notification.title,
+      message: notification.message,
+      metadata: notification.metadata,
+      read: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+  }
+
+  async getUserNotifications(creatorId: string): Promise<UserNotification[]> {
+    return [];
+  }
+
+  async getNotificationsByUser(userId: string): Promise<Notification[]> {
+    return [];
+  }
+
+  async getUnreadNotificationsByUser(userId: string): Promise<Notification[]> {
+    return [];
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<Notification | undefined> {
+    return undefined;
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    // Stub
+  }
+
+  async deleteNotification(id: string): Promise<boolean> {
+    return false;
+  }
+
+  // ===== MODERATION (Stub - would need moderation table) =====
+  async moderateUser(creatorId: string, action: ModerationType): Promise<void> {
+    // Stub - would need moderation history table
+  }
+
+  async getModerationHistory(creatorId: string): Promise<ModerationType[]> {
+    return [];
+  }
+
+  // ===== COMMENTS =====
+  async createComment(comment: InsertComment): Promise<Comment> {
+    const result = await db.insert(comments).values(comment).returning();
+    return result[0];
+  }
+
+  async getCommentsByCoin(coinAddress: string): Promise<Comment[]> {
+    return await db
+      .select()
+      .from(comments)
+      .where(eq(comments.coinAddress, coinAddress))
+      .orderBy(desc(comments.createdAt));
+  }
+
+  async getAllComments(): Promise<Comment[]> {
+    return await db.select().from(comments).orderBy(desc(comments.createdAt));
+  }
+
+  // ===== FOLLOWS =====
+  async createFollow(insertFollow: InsertFollow): Promise<Follow> {
+    const result = await db.insert(follows).values(insertFollow).returning();
+    return result[0];
+  }
+
+  async deleteFollow(followerAddress: string, followingAddress: string): Promise<boolean> {
+    const result = await db
+      .delete(follows)
+      .where(
+        and(
+          eq(follows.followerAddress, followerAddress),
+          eq(follows.followingAddress, followingAddress)
+        )
+      )
+      .returning();
+    return result.length > 0;
+  }
+
+  async getFollowers(userAddress: string): Promise<Follow[]> {
+    return await db
+      .select()
+      .from(follows)
+      .where(eq(follows.followingAddress, userAddress))
+      .orderBy(desc(follows.createdAt));
+  }
+
+  async getFollowing(userAddress: string): Promise<Follow[]> {
+    return await db
+      .select()
+      .from(follows)
+      .where(eq(follows.followerAddress, userAddress))
+      .orderBy(desc(follows.createdAt));
+  }
+
+  async isFollowing(followerAddress: string, followingAddress: string): Promise<boolean> {
+    const result = await db
+      .select()
+      .from(follows)
+      .where(
+        and(
+          eq(follows.followerAddress, followerAddress),
+          eq(follows.followingAddress, followingAddress)
+        )
+      )
+      .limit(1);
+    return result.length > 0;
+  }
+
+  // ===== REFERRALS =====
+  async createReferral(insertReferral: InsertReferral): Promise<Referral> {
+    const result = await db.insert(referrals).values(insertReferral).returning();
+    return result[0];
+  }
+
+  async getReferralsByReferrer(referrerAddress: string): Promise<Referral[]> {
+    return await db
+      .select()
+      .from(referrals)
+      .where(eq(referrals.referrerAddress, referrerAddress))
+      .orderBy(desc(referrals.createdAt));
+  }
+
+  async getReferralsByCode(referralCode: string): Promise<Referral[]> {
+    return await db
+      .select()
+      .from(referrals)
+      .where(eq(referrals.referralCode, referralCode))
+      .orderBy(desc(referrals.createdAt));
+  }
+
+  async getReferralByAddresses(
+    referrerAddress: string,
+    referredAddress: string
+  ): Promise<Referral | undefined> {
+    const result = await db
+      .select()
+      .from(referrals)
+      .where(
+        and(
+          eq(referrals.referrerAddress, referrerAddress),
+          eq(referrals.referredAddress, referredAddress)
+        )
+      )
+      .limit(1);
+    return result[0];
+  }
+
+  // ===== LOGIN STREAKS =====
+  async getLoginStreak(userAddress: string): Promise<LoginStreak | undefined> {
+    const result = await db
+      .select()
+      .from(loginStreaks)
+      .where(eq(loginStreaks.userAddress, userAddress))
+      .limit(1);
+    return result[0];
+  }
+
+  async createLoginStreak(insertLoginStreak: InsertLoginStreak): Promise<LoginStreak> {
+    const result = await db.insert(loginStreaks).values(insertLoginStreak).returning();
+    return result[0];
+  }
+
+  async updateLoginStreak(
+    userAddress: string,
+    update: UpdateLoginStreak
+  ): Promise<LoginStreak | undefined> {
+    const result = await db
+      .update(loginStreaks)
+      .set({ ...update, updatedAt: new Date() })
+      .where(eq(loginStreaks.userAddress, userAddress))
+      .returning();
     return result[0];
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new Storage();
