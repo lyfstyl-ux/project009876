@@ -2,7 +2,22 @@ import { useQuery } from "@tanstack/react-query";
 import { CreatorCard } from "@/components/creator-card";
 import { CoinCard } from "@/components/coin-card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, TrendingUp, Music, Palette, Gamepad2, Code, Shirt, Dumbbell, GraduationCap, Tv, Globe, ChevronLeft, ChevronRight, Coins } from "lucide-react";
+import {
+  Sparkles,
+  TrendingUp,
+  Music,
+  Palette,
+  Gamepad2,
+  Code,
+  Shirt,
+  Dumbbell,
+  GraduationCap,
+  Tv,
+  Globe,
+  ChevronLeft,
+  ChevronRight,
+  Coins,
+} from "lucide-react";
 import type { User } from "@shared/schema";
 import { useState, useMemo, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -37,13 +52,14 @@ export default function Home() {
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [coinMarketCaps, setCoinMarketCaps] = useState<Record<string, string>>({});
+  const [coinMarketCaps, setCoinMarketCaps] = useState<Record<string, string>>(
+    {},
+  );
   const [coinVolumes, setCoinVolumes] = useState<Record<string, string>>({});
   const [coinHolders, setCoinHolders] = useState<Record<string, number>>({});
   const [selectedCoin, setSelectedCoin] = useState<Coin | null>(null);
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
   const isMobile = useIsMobile();
-
 
   const categories = [
     { id: "all", label: "All", Icon: Globe },
@@ -63,7 +79,8 @@ export default function Home() {
       name: "Creative Coin",
       symbol: "CRTV",
       address: "0x1234567890abcdef",
-      image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop",
       marketCap: "125,000",
       volume24h: "15,250",
       holders: 342,
@@ -77,7 +94,8 @@ export default function Home() {
       name: "Music Token",
       symbol: "MUSI",
       address: "0xabcdef1234567890",
-      image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=400&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=400&fit=crop",
       marketCap: "89,500",
       volume24h: "8,920",
       holders: 215,
@@ -91,7 +109,8 @@ export default function Home() {
       name: "Gaming Gem",
       symbol: "GAME",
       address: "0xfedcba0987654321",
-      image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=400&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=400&fit=crop",
       marketCap: "256,800",
       volume24h: "32,100",
       holders: 589,
@@ -105,7 +124,8 @@ export default function Home() {
       name: "Tech Coin",
       symbol: "TECH",
       address: "0x9876543210fedcba",
-      image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=400&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=400&fit=crop",
       marketCap: "178,900",
       volume24h: "21,450",
       holders: 412,
@@ -119,7 +139,8 @@ export default function Home() {
       name: "Fashion Token",
       symbol: "FASH",
       address: "0x5432109876fedcba",
-      image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&h=400&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&h=400&fit=crop",
       marketCap: "142,300",
       volume24h: "18,670",
       holders: 367,
@@ -133,7 +154,8 @@ export default function Home() {
       name: "Fitness Fuel",
       symbol: "FIT",
       address: "0xabcd1234efgh5678",
-      image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop",
       marketCap: "95,600",
       volume24h: "11,230",
       holders: 278,
@@ -147,8 +169,8 @@ export default function Home() {
   const filteredCreators = useMemo(() => {
     if (!trendingCreators) return [];
     if (selectedCategory === "all") return trendingCreators;
-    return trendingCreators.filter((creator) => 
-      creator.categories?.includes(selectedCategory)
+    return trendingCreators.filter((creator) =>
+      creator.categories?.includes(selectedCategory),
     );
   }, [trendingCreators, selectedCategory]);
 
@@ -225,7 +247,7 @@ export default function Home() {
       {/* Trending Coins */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Coins className="h-6 w-6 text-primary" />
             <h2 className="text-2xl font-bold">Trending Coins</h2>
           </div>
@@ -234,9 +256,13 @@ export default function Home() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-1">
           {mockCoins.map((coin) => (
-            <CoinCard key={coin.id} coin={coin} onClick={() => openTradeModal(coin)} />
+            <CoinCard
+              key={coin.id}
+              coin={coin}
+              onClick={() => openTradeModal(coin)}
+            />
           ))}
         </div>
       </section>
@@ -248,7 +274,11 @@ export default function Home() {
             <TrendingUp className="h-6 w-6 text-primary" />
             <h2 className="text-2xl font-bold">Trending Creators</h2>
           </div>
-          <Button variant="ghost" size="sm" data-testid="button-view-all-creators">
+          <Button
+            variant="ghost"
+            size="sm"
+            data-testid="button-view-all-creators"
+          >
             View All
           </Button>
         </div>
@@ -272,8 +302,8 @@ export default function Home() {
         ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground">
-              {selectedCategory === "all" 
-                ? "No creators yet. Be the first!" 
+              {selectedCategory === "all"
+                ? "No creators yet. Be the first!"
                 : `No creators found in ${selectedCategory}`}
             </p>
           </div>
@@ -284,19 +314,28 @@ export default function Home() {
       <section className="bg-card border border-border rounded-2xl p-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
           <div>
-            <div className="text-4xl font-bold text-primary" data-testid="text-stat-creators">
+            <div
+              className="text-4xl font-bold text-primary"
+              data-testid="text-stat-creators"
+            >
               10K+
             </div>
             <div className="text-muted-foreground mt-2">Active Creators</div>
           </div>
           <div>
-            <div className="text-4xl font-bold text-accent" data-testid="text-stat-volume">
+            <div
+              className="text-4xl font-bold text-accent"
+              data-testid="text-stat-volume"
+            >
               $5M+
             </div>
             <div className="text-muted-foreground mt-2">Trading Volume</div>
           </div>
           <div>
-            <div className="text-4xl font-bold text-chart-4" data-testid="text-stat-earnings">
+            <div
+              className="text-4xl font-bold text-chart-4"
+              data-testid="text-stat-earnings"
+            >
               $2M+
             </div>
             <div className="text-muted-foreground mt-2">Creator Earnings</div>
@@ -304,8 +343,8 @@ export default function Home() {
         </div>
       </section>
 
-      {selectedCoin && (
-        isMobile ? (
+      {selectedCoin &&
+        (isMobile ? (
           <TradeModalMobile
             coin={selectedCoin}
             open={isTradeModalOpen}
@@ -317,8 +356,7 @@ export default function Home() {
             open={isTradeModalOpen}
             onOpenChange={setIsTradeModalOpen}
           />
-        )
-      )}
+        ))}
     </div>
   );
 }
