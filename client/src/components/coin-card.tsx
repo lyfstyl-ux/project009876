@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, User, Coins } from "lucide-react";
@@ -38,7 +37,7 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
   useEffect(() => {
     async function fetchCoinData() {
       if (!coin.address) return;
-      
+
       try {
         const response = await getCoin({
           address: coin.address as `0x${string}`,
@@ -49,17 +48,19 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
         if (coinData) {
           // Market Cap
           if (coinData.marketCap !== null && coinData.marketCap !== undefined) {
-            const mcValue = typeof coinData.marketCap === 'string' 
-              ? parseFloat(coinData.marketCap) 
-              : coinData.marketCap;
+            const mcValue =
+              typeof coinData.marketCap === "string"
+                ? parseFloat(coinData.marketCap)
+                : coinData.marketCap;
             setLiveMarketCap(mcValue.toFixed(2));
           }
 
           // Volume 24h
           if (coinData.volume24h !== null && coinData.volume24h !== undefined) {
-            const volValue = typeof coinData.volume24h === 'string' 
-              ? parseFloat(coinData.volume24h) 
-              : coinData.volume24h;
+            const volValue =
+              typeof coinData.volume24h === "string"
+                ? parseFloat(coinData.volume24h)
+                : coinData.volume24h;
             setLiveVolume(volValue.toFixed(2));
           }
 
@@ -87,7 +88,7 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
       onClick={onClick}
       className={cn(
         "group relative overflow-hidden rounded-3xl border-border/50 bg-card cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1",
-        className
+        className,
       )}
     >
       {/* Coin Image */}
@@ -108,7 +109,10 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
 
         {coin.category && (
           <div className="absolute top-1.5 right-1.5 z-10">
-            <Badge variant="secondary" className="text-[8px] px-1.5 py-0.5 h-auto font-medium">
+            <Badge
+              variant="secondary"
+              className="text-[8px] px-1.5 py-0.5 h-auto font-medium"
+            >
               {coin.category}
             </Badge>
           </div>
@@ -173,7 +177,7 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
           <div className="flex items-center justify-between text-[10px]">
             <div className="flex items-center gap-0.5">
               <User className="h-2.5 w-2.5 text-orange-500" />
-              <span className="text-muted-foreground">Holders:</span>
+              <span className="text-muted-foreground"></span>
               <span className="font-semibold text-foreground">
                 {liveHolders || coin.holders || 0}
               </span>
