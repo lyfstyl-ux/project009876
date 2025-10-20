@@ -9,6 +9,23 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import TradeModalDesktop from "@/components/trade-modal-desktop";
 import TradeModalMobile from "@/components/trade-modal-mobile";
 
+type Coin = {
+  id: string;
+  name: string;
+  symbol: string;
+  address: string;
+  image?: string;
+  marketCap?: string;
+  volume24h?: string;
+  holders?: number;
+  creator?: string;
+  createdAt?: string;
+  category?: string;
+  platform?: string;
+  creator_wallet?: string;
+  metadata?: any;
+};
+
 export default function Home() {
   const { data: trendingCreators, isLoading } = useQuery<User[]>({
     queryKey: ["/api/creators/trending"],
@@ -290,15 +307,15 @@ export default function Home() {
       {selectedCoin && (
         isMobile ? (
           <TradeModalMobile
-            isOpen={isTradeModalOpen}
-            onClose={closeTradeModal}
             coin={selectedCoin}
+            open={isTradeModalOpen}
+            onOpenChange={setIsTradeModalOpen}
           />
         ) : (
           <TradeModalDesktop
-            isOpen={isTradeModalOpen}
-            onClose={closeTradeModal}
             coin={selectedCoin}
+            open={isTradeModalOpen}
+            onOpenChange={setIsTradeModalOpen}
           />
         )
       )}

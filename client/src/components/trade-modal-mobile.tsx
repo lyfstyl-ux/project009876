@@ -22,6 +22,23 @@ interface MobileTradeModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+type Coin = {
+  id: string;
+  name: string;
+  symbol: string;
+  address: string;
+  image?: string;
+  marketCap?: string;
+  volume24h?: string;
+  holders?: number;
+  creator?: string;
+  createdAt?: string;
+  category?: string;
+  platform?: string;
+  creator_wallet?: string;
+  metadata?: any;
+};
+
 export default function MobileTradeModal({ coin, open, onOpenChange }: MobileTradeModalProps) {
   const { toast } = useToast();
   const [ethAmount, setEthAmount] = useState("");
