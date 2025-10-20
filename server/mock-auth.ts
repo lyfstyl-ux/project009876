@@ -48,5 +48,10 @@ export function setMockCurrentUserId(userId: string) {
 }
 
 // Alias exports for compatibility
-export const getCurrentUserId = getMockCurrentUserId;
-export const setCurrentUserId = setMockCurrentUserId;
+export function getCurrentUserId(): string {
+  return getMockCurrentUserId();
+}
+
+export function setCurrentUserId(userId: string): void {
+  setMockCurrentUserId(userId);
+}

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { getMockCurrentUserId, getCurrentUserId, setCurrentUserId } from "./mock-auth";
+import { getMockCurrentUserId, getCurrentUserId } from "./mock-auth";
 import { insertUserSchema, insertProjectSchema, insertCoinSchema, insertMessageSchema, insertConnectionSchema, insertGroupSchema } from "@shared/schema";
 import { db } from "./db";
 import * as schema from "@shared/schema";
