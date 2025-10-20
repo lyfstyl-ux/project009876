@@ -174,6 +174,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertCoinSchema.parse(req.body);
       const coin = await storage.createCoin(validatedData);
+      
+      // Track referral activity
+      if (coin.userId) {
+        const { trackReferralActivity } = await import("./points");
+        await trackReferralActivity(coin.userId, 'create_coin');
+      }
+      
       res.status(201).json(coin);
     } catch (error) {
       console.error("Error creating coin:", error);
@@ -537,17 +544,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get referral stats
+  router.get("/api/referral/stats", async (req, res) => {
+    try {
+      const userId = req.user?.id || getMockCurrentUserId();
+      
+      const referralList = await db.select().from(schema.referrals)
+        .where(eq(schema.referrals.referrerId, userId));
+
+      const totalReferrals = referralList.length;
+      const activeReferrals = referralList.filter(r => r.hasTradedOrCreated).length;
+      const totalEarned = referralList.reduce((sum, r) => sum + (r.totalPointsEarned || 0), 0);
+
+      res.json({
+        totalReferrals,
+        activeReferrals,
+        totalEarned,
+        referrals: referralList,
+      });
+    } catch (error) {
+      console.error("Error fetching referral stats:", error);
+      res.status(500).json({ message: "Failed to fetch referral stats" });
+    }
+  });
+
   // Track referral signup
   router.post("/api/referral/signup", async (req, res) => {
     try {
       const { referralCode } = req.body;
       const userId = req.user?.id || getMockCurrentUserId();
+      const { createNotification } = await import("./notifications");
 
+      // Find referrer by username (referral code)
       const [referrer] = await db.select().from(schema.users)
-        .where(eq(schema.users.referralCode, referralCode)).limit(1);
+        .where(eq(schema.users.username, referralCode)).limit(1);
 
       if (!referrer || referrer.id === userId) {
         return res.status(400).json({ message: "Invalid referral code" });
+      }
+
+      // Check if already referred
+      const [existingReferral] = await db.select().from(schema.referrals)
+        .where(eq(schema.referrals.referredUserId, userId)).limit(1);
+
+      if (existingReferral) {
+        return res.status(400).json({ message: "Already referred by someone" });
       }
 
       // Update new user's referredBy
@@ -555,11 +596,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .set({ referredBy: referrer.id })
         .where(eq(schema.users.id, userId));
 
+      // Create referral tracking record
+      await db.insert(schema.referrals).values({
+        referrerId: referrer.id,
+        referredUserId: userId,
+        status: 'pending',
+      });
+
       // Award points to referrer
-      await awardPoints(referrer.id, POINTS_REWARDS.REFERRAL_SIGNUP, "referral", `Referral signup: ${userId}`);
+      await awardPoints(referrer.id, POINTS_REWARDS.REFERRAL_SIGNUP, "referral", "New referral signup!", { referredUserId: userId });
       
-      // Award points to new user
-      await awardPoints(userId, 100, "referral", "Welcome bonus!");
+      // Award welcome bonus to new user
+      await awardPoints(userId, 100, "referral", "Welcome bonus from referral!");
+
+      // Notify referrer
+      await createNotification({
+        userId: referrer.id,
+        type: "referral_signup",
+        title: "New Referral! 🎊",
+        message: `Someone joined using your referral code! You earned ${POINTS_REWARDS.REFERRAL_SIGNUP} E1XP`,
+        amount: POINTS_REWARDS.REFERRAL_SIGNUP.toString(),
+      });
+
+      // Check for referral king badge (10 referrals)
+      const referralCount = await db.select({ count: sql<number>`count(*)` })
+        .from(schema.referrals)
+        .where(eq(schema.referrals.referrerId, referrer.id));
+
+      if (referralCount[0]?.count === 10) {
+        await checkAndAwardSpecialBadges(referrer.id, "10_referrals");
+      }
 
       res.json({ success: true });
     } catch (error) {

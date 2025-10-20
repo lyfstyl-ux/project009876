@@ -14,6 +14,7 @@ export const POINTS_REWARDS = {
   IMPORT_COIN: 50,
   REFERRAL_SIGNUP: 500,
   REFERRAL_FIRST_TRADE: 250,
+  REFERRAL_BONUS_MULTIPLIER: 2, // Double points for active referrals
   PROFILE_COMPLETE: 30,
   FIRST_CONNECTION: 20,
   JOIN_GROUP: 15,
@@ -121,10 +122,74 @@ export async function checkAndAwardSpecialBadges(userId: string, type: string, m
 }
 
 export async function generateReferralCode(userId: string): Promise<string> {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  
+  if (user?.username) {
+    // Use username as referral code
+    await db
+      .update(users)
+      .set({ referralCode: user.username })
+      .where(eq(users.id, userId));
+    return user.username;
+  }
+  
+  // Fallback to random code if no username
   const code = Math.random().toString(36).substring(2, 10).toUpperCase();
   await db
     .update(users)
     .set({ referralCode: code })
     .where(eq(users.id, userId));
   return code;
+}
+
+export async function trackReferralActivity(userId: string, activityType: 'trade' | 'create_coin') {
+  const { referrals } = await import("@shared/schema");
+  const { createNotification } = await import("./notifications");
+  
+  // Check if user was referred
+  const [referralRecord] = await db
+    .select()
+    .from(referrals)
+    .where(eq(referrals.referredUserId, userId))
+    .limit(1);
+  
+  if (!referralRecord) return;
+  
+  const bonusPoints = activityType === 'create_coin' ? POINTS_REWARDS.CREATE_COIN : POINTS_REWARDS.TRADE_BUY;
+  const referrerBonus = bonusPoints * POINTS_REWARDS.REFERRAL_BONUS_MULTIPLIER;
+  
+  // Award bonus to referrer
+  await awardPoints(
+    referralRecord.referrerId,
+    referrerBonus,
+    "referral_bonus",
+    `Your referral ${activityType === 'create_coin' ? 'created a coin' : 'made a trade'}! 2x bonus!`,
+    { referredUserId: userId, activityType }
+  );
+  
+  // Update referral tracking
+  await db
+    .update(referrals)
+    .set({
+      hasTradedOrCreated: true,
+      totalPointsEarned: (referralRecord.totalPointsEarned || 0) + referrerBonus,
+      status: 'active',
+    })
+    .where(eq(referrals.id, referralRecord.id));
+  
+  // Notify referrer
+  const [referrer] = await db.select().from(users).where(eq(users.id, referralRecord.referrerId)).limit(1);
+  if (referrer) {
+    await createNotification({
+      userId: referralRecord.referrerId,
+      type: "referral_bonus",
+      title: "Referral Bonus! 🎉",
+      message: `Your referral just ${activityType === 'create_coin' ? 'created a coin' : 'made a trade'}! You earned ${referrerBonus} E1XP (2x bonus)`,
+      amount: referrerBonus.toString(),
+    });
+  }
 }

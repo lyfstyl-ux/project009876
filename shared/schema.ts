@@ -161,6 +161,17 @@ export const pointsTransactions = pgTable("points_transactions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Referral Tracking
+export const referrals = pgTable("referrals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referrerId: varchar("referrer_id").references(() => users.id).notNull(),
+  referredUserId: varchar("referred_user_id").references(() => users.id).notNull(),
+  status: text("status").default("pending"), // 'pending' | 'active' | 'rewarded'
+  totalPointsEarned: integer("total_points_earned").default(0),
+  hasTradedOrCreated: boolean("has_traded_or_created").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // OG Meta Share Tracking
 export const shareTracking = pgTable("share_tracking", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -183,7 +194,8 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   loginStreak: many(loginStreaks),
   pointsTransactions: many(pointsTransactions),
   shareTracking: many(shareTracking),
-  referrer: one(users, {
+  referredUsers: many(referrals, { relationName: "referrer" }),
+  referredBy: one(users, {
     fields: [users.referredBy],
     references: [users.id],
   }),
@@ -207,8 +219,8 @@ export const coinsRelations = relations(coins, ({ one, many }) => ({
   }),
   transactions: many(transactions),
   scrapedContent: one(scrapedContent, {
-    fields: [coins.scraped_content_id],
-    relationName: "coinContent",
+    fields: [coins.scrapedContentId],
+    references: [scrapedContent.id],
   }),
 }));
 
@@ -339,6 +351,28 @@ export type InsertPointsTransaction = typeof pointsTransactions.$inferInsert;
 
 export type ShareTracking = typeof shareTracking.$inferSelect;
 export type InsertShareTracking = typeof shareTracking.$inferInsert;
+
+export const referralsRelations = relations(referrals, ({ one }) => ({
+  referrer: one(users, {
+    fields: [referrals.referrerId],
+    references: [users.id],
+    relationName: "referrer",
+  }),
+  referredUser: one(users, {
+    fields: [referrals.referredUserId],
+    references: [users.id],
+  }),
+}));
+
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = typeof referrals.$inferInsert;
+
+export const insertReferralSchema = createInsertSchema(referrals).omit({
+  id: true,
+  createdAt: true,
+  totalPointsEarned: true,
+  hasTradedOrCreated: true,
+});
 
 // Scraped Content table - imported content from URLs
 export const scrapedContent = pgTable("scraped_content", {

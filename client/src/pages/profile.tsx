@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, MapPin, Settings, Share2, Grid3x3, List, MessageCircle, UserPlus, Trophy, Sparkles, Award } from "lucide-react";
+import { Edit, MapPin, Settings, Share2, Grid3x3, List, MessageCircle, UserPlus, Trophy, Sparkles, Award, Users2, Copy, Check } from "lucide-react";
 import type { User, Project } from "@shared/schema";
 import { ShareModal } from "@/components/share-modal";
 
@@ -24,10 +24,17 @@ export default function Profile() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
+  const [referralCodeCopied, setReferralCodeCopied] = useState(false);
   const [editData, setEditData] = useState({
     displayName: "",
     bio: "",
     location: "",
+  });
+
+  const { data: referralStats } = useQuery({
+    queryKey: ["/api/referral/stats"],
+    enabled: isOwnProfile && authenticated,
   });
 
   const BADGE_INFO: Record<string, { name: string; icon: string; color: string }> = {
@@ -95,6 +102,18 @@ export default function Profile() {
       }
     } catch (error) {
       console.error("Share error:", error);
+    }
+  };
+
+  const handleCopyReferralCode = async () => {
+    const referralUrl = `${window.location.origin}/join/${user?.username}`;
+    try {
+      await navigator.clipboard.writeText(referralUrl);
+      setReferralCodeCopied(true);
+      toast({ title: "Referral link copied!" });
+      setTimeout(() => setReferralCodeCopied(false), 2000);
+    } catch (error) {
+      console.error("Copy error:", error);
     }
   };
 
@@ -219,6 +238,68 @@ export default function Profile() {
                 )}
               </div>
             </Card>
+
+            {/* Referral Stats (Own Profile Only) */}
+            {isOwnProfile && referralStats && (
+              <Card className="p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users2 className="h-5 w-5 text-blue-500" />
+                      <span className="font-semibold">Referral Program</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsReferralModalOpen(true)}
+                      className="text-xs"
+                    >
+                      View All
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-xl font-bold text-blue-500">
+                        {referralStats.totalReferrals}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Referrals</div>
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-purple-500">
+                        {referralStats.activeReferrals}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Active</div>
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-green-500">
+                        {referralStats.totalEarned}
+                      </div>
+                      <div className="text-xs text-muted-foreground">E1XP Earned</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={user.username}
+                      readOnly
+                      className="flex-1 text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleCopyReferralCode}
+                    >
+                      {referralCodeCopied ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Share your username to earn 500 E1XP per signup + 2x bonus when they trade!
+                  </p>
+                </div>
+              </Card>
+            )}
 
             {/* Badges */}
             {user.pointsBadges && user.pointsBadges.length > 0 && (
@@ -404,6 +485,94 @@ export default function Profile() {
         resourceId={profileUserId || ""}
         title={`${user.displayName || user.username}'s Profile`}
       />
+
+      {/* Referral Details Modal */}
+      <Dialog open={isReferralModalOpen} onOpenChange={setIsReferralModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users2 className="h-5 w-5" />
+              Your Referrals
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Card className="p-4 bg-gradient-to-r from-primary/10 to-secondary/10">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-primary">
+                    {referralStats?.totalReferrals || 0}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Total Referrals</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-secondary">
+                    {referralStats?.activeReferrals || 0}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Active</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-500">
+                    {referralStats?.totalEarned || 0}
+                  </div>
+                  <div className="text-xs text-muted-foreground">E1XP Earned</div>
+                </div>
+              </div>
+            </Card>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Your Referral Link</label>
+              <div className="flex gap-2">
+                <Input
+                  value={`${window.location.origin}/join/${user.username}`}
+                  readOnly
+                />
+                <Button size="icon" onClick={handleCopyReferralCode}>
+                  {referralCodeCopied ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm">How it works:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Share your username or link with friends</li>
+                <li>• Earn 500 E1XP when they sign up</li>
+                <li>• Get 2x bonus E1XP when they trade or create coins</li>
+                <li>• Track all your referrals and earnings here</li>
+              </ul>
+            </div>
+
+            {referralStats?.referrals && referralStats.referrals.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Recent Referrals:</h4>
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {referralStats.referrals.map((referral: any) => (
+                    <Card key={referral.id} className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={referral.hasTradedOrCreated ? "default" : "secondary"}>
+                            {referral.status}
+                          </Badge>
+                          <span className="text-sm">
+                            {new Date(referral.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="text-sm font-semibold text-primary">
+                          +{referral.totalPointsEarned} E1XP
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
