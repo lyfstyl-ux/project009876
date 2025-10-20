@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 export default function Admin() {
   const { toast } = useToast();
@@ -33,6 +34,17 @@ export default function Admin() {
         <div>
           <h1 className="text-3xl font-bold">Admin Panel</h1>
           <p className="text-muted-foreground">Manage platform users, coins, and notifications</p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <Input
+            type="search"
+            placeholder="Search users, coins..."
+            className="w-[300px]"
+          />
+          <Button>
+            <Search className="mr-2 h-4 w-4" />
+            Search
+          </Button>
         </div>
       </div>
 

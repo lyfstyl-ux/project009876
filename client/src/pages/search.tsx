@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { CreatorCard } from "@/components/creator-card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,17 @@ import { Search as SearchIcon, Filter, X } from "lucide-react";
 import type { User } from "@shared/schema";
 
 export default function Search() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [location] = useLocation();
+  const urlParams = new URLSearchParams(window.location.search);
+  const [searchQuery, setSearchQuery] = useState(urlParams.get('q') || "");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get('q');
+    if (query) {
+      setSearchQuery(query);
+    }
+  }, [location]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("connections");
@@ -44,7 +55,7 @@ export default function Search() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="container max-w-5xl mx-auto px-4 py-8 space-y-8">
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">Search Creators</h1>

@@ -14,7 +14,7 @@ export default function Home() {
   });
 
   return (
-    <div className="container max-w-7xl mx-auto px-4 py-8 space-y-12">
+    <div className="container max-w-5xl mx-auto px-4 py-8 space-y-12">
       {/* Hero Section */}
       <section className="text-center space-y-4 py-12">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight">

@@ -16,7 +16,7 @@ export default function Connections() {
   });
 
   return (
-    <div className="container max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="container max-w-5xl mx-auto px-4 py-8 space-y-8">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Users className="h-8 w-8 text-primary" />

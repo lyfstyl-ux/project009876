@@ -1,9 +1,11 @@
 
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Home, Search, PlusCircle, MessageCircle, User, Users, Zap, TrendingUp } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { NotificationBell } from "./notification-bell";
 import { UserMenu } from "./user-menu";
+import { Input } from "@/components/ui/input";
 import {
   Sidebar,
   SidebarContent,
@@ -19,7 +21,8 @@ import {
 } from "@/components/ui/sidebar";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const navItems = [
     { icon: Home, label: "Feed", path: "/", testId: "nav-feed" },
@@ -102,7 +105,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarInset className="flex flex-col w-full">
           {/* Top Navigation - Desktop */}
           <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-            <div className="flex h-16 items-center justify-between px-4 max-w-7xl mx-auto w-full">
+            <div className="flex h-16 items-center justify-between px-4 max-w-5xl mx-auto w-full gap-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="hidden md:flex" />
                 <Link href="/" data-testid="link-logo" className="md:hidden">
@@ -110,6 +113,26 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     creatorland<span className="text-primary">*</span>
                   </h1>
                 </Link>
+              </div>
+
+              {/* Desktop Search Bar */}
+              <div className="hidden md:flex flex-1 max-w-md">
+                <div className="relative w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search creators, projects..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && searchQuery.trim()) {
+                        setLocation(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                      }
+                    }}
+                    className="pl-9 h-9 text-sm bg-muted/50"
+                    data-testid="header-search"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center gap-2">

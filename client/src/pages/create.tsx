@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, Link as LinkIcon, Sparkles } from "lucide-react";
+import { Upload, Link as LinkIcon, Sparkles, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const createProjectSchema = z.object({
@@ -39,6 +39,7 @@ export default function Create() {
   const [step, setStep] = useState<"input" | "preview" | "minting">("input");
   const [uploadMethod, setUploadMethod] = useState<"url" | "file">("url");
   const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const form = useForm<CreateProjectForm>({
     resolver: zodResolver(createProjectSchema),
@@ -71,15 +72,41 @@ export default function Create() {
     }, 2000);
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Searching for:", searchQuery);
+    // Implement actual search logic here
+    toast({
+      title: "Search initiated",
+      description: `Looking for "${searchQuery}"...`,
+    });
+  };
+
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-8 space-y-8">
+    <div className="container max-w-5xl mx-auto px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold">Create Project</h1>
-        <p className="text-muted-foreground">
-          Turn your content into a tradeable creator coin
-        </p>
+      <div className="flex justify-between items-center">
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-bold">Create Project</h1>
+          <p className="text-muted-foreground">
+            Turn your content into a tradeable creator coin
+          </p>
+        </div>
+        {/* Search Bar */}
+        <form onSubmit={handleSearch} className="flex items-center space-x-2">
+          <Input
+            type="search"
+            placeholder="Search projects..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-64"
+          />
+          <Button type="submit" size="icon" aria-label="Search">
+            <Search className="h-5 w-5" />
+          </Button>
+        </form>
       </div>
+
 
       {/* Progress Steps */}
       <div className="flex items-center justify-center gap-4">

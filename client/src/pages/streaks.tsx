@@ -15,7 +15,7 @@ export default function Streaks() {
   const weeklyCalendar = streak?.weeklyCalendar || [false, false, false, false, false, false, false];
 
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-8 space-y-8">
+    <div className="container max-w-5xl mx-auto px-4 py-8 space-y-8">
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center gap-2">
