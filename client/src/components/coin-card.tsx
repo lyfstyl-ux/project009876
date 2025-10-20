@@ -107,14 +107,15 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
           </span>
         </div>
 
-        {coin.category && (
+        {coin.category && coin.category.toLowerCase() === 'zora' && (
           <div className="absolute top-1.5 right-1.5 z-10">
-            <Badge
-              variant="secondary"
-              className="text-[8px] px-1.5 py-0.5 h-auto font-medium"
-            >
-              {coin.category}
-            </Badge>
+            <div className="w-5 h-5 rounded-full overflow-hidden bg-black/80 backdrop-blur-sm flex items-center justify-center">
+              <img 
+                src="/client/d7cf07e6-73fb-496a-a3c5-edacaa9f4375.png" 
+                alt="Zora" 
+                className="w-full h-full object-cover"
+              />
+            </div>
           </div>
         )}
 
