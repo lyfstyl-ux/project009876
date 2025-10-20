@@ -288,7 +288,13 @@ export const insertCoinSchema = createInsertSchema(coins, {
   name: z.string().min(1, "Coin name is required"),
   symbol: z.string().min(1, "Symbol is required"),
   status: z.enum(["pending", "active", "minted"]).default("pending"),
+}).omit({
+  id: true,
+  createdAt: true,
 });
+
+export type Coin = typeof coins.$inferSelect;
+export type InsertCoin = z.infer<typeof insertCoinSchema>;
 
 export const insertMessageSchema = createInsertSchema(messages).omit({
   id: true,
@@ -323,9 +329,6 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
-
-export type Coin = typeof coins.$inferSelect;
-export type InsertCoin = z.infer<typeof insertCoinSchema>;
 
 export type Transaction = typeof transactions.$inferSelect;
 
@@ -448,7 +451,6 @@ export const comments = pgTable("comments", {
 
 // Type exports for new tables
 export type ScrapedContent = typeof scrapedContent.$inferSelect;
-export type Coin = typeof coins.$inferSelect;
 export type Reward = typeof rewards.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type Creator = typeof creators.$inferSelect;

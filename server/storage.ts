@@ -103,8 +103,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+    const result = await db.insert(users).values(insertUser).returning();
+    return result[0];
   }
 
   async updateUser(id: string, updateData: Partial<User>): Promise<User | undefined> {
@@ -113,20 +113,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchUsers(query: string, filters?: any): Promise<User[]> {
-    let queryBuilder = db.select().from(users);
-    
     if (query) {
-      queryBuilder = queryBuilder.where(
+      return await db.select().from(users).where(
         or(
           like(users.username, `%${query}%`),
           like(users.displayName, `%${query}%`),
           like(users.bio, `%${query}%`)
         )
-      );
+      ).limit(50);
     }
-
-    const results = await queryBuilder.limit(50);
-    return results;
+    
+    return await db.select().from(users).limit(50);
   }
 
   async getTrendingCreators(limit: number = 12): Promise<User[]> {
@@ -172,7 +169,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCoinsByUser(userId: string): Promise<Coin[]> {
-    return await db.select().from(coins).where(eq(coins.userId, userId)).orderBy(desc(coins.mintedAt));
+    return await db.select().from(coins).where(eq(coins.userId, userId)).orderBy(desc(coins.createdAt));
   }
 
   async createCoin(insertCoin: InsertCoin): Promise<Coin> {
@@ -317,8 +314,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createLoginStreak(insertStreak: InsertLoginStreak): Promise<LoginStreak> {
-    const [streak] = await db.insert(loginStreaks).values(insertStreak).returning();
-    return streak;
+    const result = await db.insert(loginStreaks).values(insertStreak).returning();
+    return result[0];
   }
 }
 
