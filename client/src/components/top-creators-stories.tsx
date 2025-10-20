@@ -9,19 +9,24 @@ interface TopCreatorsStoriesProps {
   className?: string;
 }
 
-export function TopCreatorsStories({ 
-  creators, 
-  limit = 6, 
-  className 
+export function TopCreatorsStories({
+  creators,
+  limit = 6,
+  className,
 }: TopCreatorsStoriesProps) {
   const topCreators = creators.slice(0, limit);
 
   return (
-    <div className={cn("flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2", className)}>
+    <div
+      className={cn(
+        "flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2",
+        className,
+      )}
+    >
       {topCreators.map((creator, index) => {
         // Calculate earnings (E1XP * 0.001)
         const earnings = ((creator.e1xpPoints || 0) * 0.001).toFixed(2);
-        
+
         return (
           <Link
             key={creator.id}
@@ -36,20 +41,20 @@ export function TopCreatorsStories({
                   <Avatar className="h-16 w-16 ring-0">
                     <AvatarImage src={creator.avatarUrl || undefined} />
                     <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-foreground font-bold text-lg">
-                      {creator.username?.charAt(0).toUpperCase() || '?'}
+                      {creator.username?.charAt(0).toUpperCase() || "?"}
                     </AvatarFallback>
                   </Avatar>
                 </div>
               </div>
-              
+
               {/* Earnings badge */}
-              <div className="absolute -bottom-0.5 -right-0.5 min-w-[24px] h-5 px-1.5 rounded-full bg-green-500 flex items-center justify-center text-[10px] font-bold text-white shadow-lg ring-2 ring-background">
+              <div className="absolute -bottom-0.5 -right-0.5 min-w-[24px] h-4 px-1.5 rounded-full bg-green-500 flex items-center justify-center text-[9px] font-bold text-white ring-1 ring-background">
                 ${earnings}
               </div>
             </div>
-            
+
             <span className="text-[11px] font-medium text-foreground max-w-[64px] truncate text-center group-hover:text-primary transition-colors">
-              {creator.username || 'Unknown'}
+              {creator.username || "Unknown"}
             </span>
           </Link>
         );
