@@ -404,9 +404,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update login streak (check-in)
   router.post("/api/streaks/checkin", async (req, res) => {
     try {
-      // TODO: Replace with Privy authentication
-      const userId = getMockCurrentUserId();
+      const userId = req.user?.id || getMockCurrentUserId();
       let streak = await storage.getLoginStreak(userId);
+      const { checkAndAwardSpecialBadges } = await import("./points");
 
       if (!streak) {
         streak = await storage.createLoginStreak({
@@ -416,6 +416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalPoints: 10,
           lastLoginDate: new Date(),
         });
+        await awardPoints(userId, POINTS_REWARDS.DAILY_LOGIN, "daily_login", "Daily login bonus!");
       } else {
         const lastLogin = streak.lastLoginDate ? new Date(streak.lastLoginDate) : null;
         const today = new Date();
@@ -424,16 +425,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : 999;
 
         let newStreak = streak.currentStreak || 0;
+        let pointsAwarded = 0;
+
         if (diffDays === 1) {
           // Consecutive day
           newStreak += 1;
+          pointsAwarded = POINTS_REWARDS.DAILY_LOGIN;
+
+          // Streak bonuses
+          if (newStreak === 3) {
+            pointsAwarded += POINTS_REWARDS.DAILY_STREAK_3;
+            await awardPoints(userId, POINTS_REWARDS.DAILY_STREAK_3, "daily_streak", "3-day streak bonus!");
+          } else if (newStreak === 7) {
+            pointsAwarded += POINTS_REWARDS.DAILY_STREAK_7;
+            await awardPoints(userId, POINTS_REWARDS.DAILY_STREAK_7, "daily_streak", "7-day streak bonus!");
+            await checkAndAwardSpecialBadges(userId, "7_day_streak");
+          } else if (newStreak === 30) {
+            pointsAwarded += POINTS_REWARDS.DAILY_STREAK_30;
+            await awardPoints(userId, POINTS_REWARDS.DAILY_STREAK_30, "daily_streak", "30-day streak bonus!");
+          }
+
+          await awardPoints(userId, POINTS_REWARDS.DAILY_LOGIN, "daily_login", `Day ${newStreak} login bonus!`);
         } else if (diffDays > 1) {
           // Streak broken
           newStreak = 1;
+          pointsAwarded = POINTS_REWARDS.DAILY_LOGIN;
+          await awardPoints(userId, POINTS_REWARDS.DAILY_LOGIN, "daily_login", "Daily login bonus!");
         }
 
         const newLongest = Math.max(newStreak, streak.longestStreak || 0);
-        const newPoints = (streak.totalPoints || 0) + 10;
+        const newPoints = (streak.totalPoints || 0) + pointsAwarded;
 
         streak = await storage.updateLoginStreak(userId, {
           currentStreak: newStreak,
@@ -461,6 +482,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error uploading to IPFS:", error);
       res.status(500).json({ message: "Failed to upload to IPFS" });
+    }
+  });
+
+  // ========== E1XP POINTS SYSTEM ==========
+
+  const { awardPoints, generateReferralCode, POINTS_REWARDS, BADGES } = await import("./points");
+
+  // Get user's points history
+  router.get("/api/points/history", async (req, res) => {
+    try {
+      const userId = req.user?.id || getMockCurrentUserId();
+      const transactions = await db.query.pointsTransactions.findMany({
+        where: eq(schema.pointsTransactions.userId, userId),
+        orderBy: [desc(schema.pointsTransactions.createdAt)],
+        limit: 50,
+      });
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching points history:", error);
+      res.status(500).json({ message: "Failed to fetch points history" });
+    }
+  });
+
+  // Get leaderboard
+  router.get("/api/points/leaderboard", async (req, res) => {
+    try {
+      const topUsers = await db.query.users.findMany({
+        orderBy: [desc(schema.users.e1xpPoints)],
+        limit: 100,
+      });
+      res.json(topUsers);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      res.status(500).json({ message: "Failed to fetch leaderboard" });
+    }
+  });
+
+  // Generate or get referral code
+  router.post("/api/referral/generate", async (req, res) => {
+    try {
+      const userId = req.user?.id || getMockCurrentUserId();
+      const [user] = await db.select().from(schema.users).where(eq(schema.users.id, userId)).limit(1);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const code = user.referralCode || await generateReferralCode(userId);
+      res.json({ referralCode: code });
+    } catch (error) {
+      console.error("Error generating referral code:", error);
+      res.status(500).json({ message: "Failed to generate referral code" });
+    }
+  });
+
+  // Track referral signup
+  router.post("/api/referral/signup", async (req, res) => {
+    try {
+      const { referralCode } = req.body;
+      const userId = req.user?.id || getMockCurrentUserId();
+
+      const [referrer] = await db.select().from(schema.users)
+        .where(eq(schema.users.referralCode, referralCode)).limit(1);
+
+      if (!referrer || referrer.id === userId) {
+        return res.status(400).json({ message: "Invalid referral code" });
+      }
+
+      // Update new user's referredBy
+      await db.update(schema.users)
+        .set({ referredBy: referrer.id })
+        .where(eq(schema.users.id, userId));
+
+      // Award points to referrer
+      await awardPoints(referrer.id, POINTS_REWARDS.REFERRAL_SIGNUP, "referral", `Referral signup: ${userId}`);
+      
+      // Award points to new user
+      await awardPoints(userId, 100, "referral", "Welcome bonus!");
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error processing referral:", error);
+      res.status(500).json({ message: "Failed to process referral" });
+    }
+  });
+
+  // ========== SHARE TRACKING ==========
+
+  const { generateProfileOGMeta, generateCoinOGMeta, generateProjectOGMeta, generateReferralOGMeta, generateBadgeOGMeta } = await import("./og-meta");
+
+  // Track share
+  router.post("/api/share/track", async (req, res) => {
+    try {
+      const userId = req.user?.id || getMockCurrentUserId();
+      const { shareType, resourceId, platform } = req.body;
+
+      await db.insert(schema.shareTracking).values({
+        userId,
+        shareType,
+        resourceId,
+        platform,
+      });
+
+      // Award points for sharing
+      await awardPoints(userId, 5, "share", `Shared ${shareType}`, { platform });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking share:", error);
+      res.status(500).json({ message: "Failed to track share" });
+    }
+  });
+
+  // Get OG meta for resource
+  router.get("/api/og-meta/:type/:id", async (req, res) => {
+    try {
+      const { type, id } = req.params;
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+      let meta;
+      switch (type) {
+        case "profile": {
+          const user = await storage.getUser(id);
+          if (!user) return res.status(404).json({ message: "User not found" });
+          meta = generateProfileOGMeta(user, baseUrl);
+          break;
+        }
+        case "coin": {
+          const coin = await storage.getCoin(id);
+          if (!coin) return res.status(404).json({ message: "Coin not found" });
+          meta = generateCoinOGMeta(coin, baseUrl);
+          break;
+        }
+        case "project": {
+          const project = await storage.getProject(id);
+          if (!project) return res.status(404).json({ message: "Project not found" });
+          meta = generateProjectOGMeta(project, baseUrl);
+          break;
+        }
+        default:
+          return res.status(400).json({ message: "Invalid type" });
+      }
+
+      res.json(meta);
+    } catch (error) {
+      console.error("Error generating OG meta:", error);
+      res.status(500).json({ message: "Failed to generate OG meta" });
     }
   });
 

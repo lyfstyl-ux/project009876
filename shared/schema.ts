@@ -28,6 +28,10 @@ export const users = pgTable("users", {
   totalConnections: integer("total_connections").default(0),
   totalProfileViews: integer("total_profile_views").default(0),
   totalEarnings: decimal("total_earnings", { precision: 18, scale: 8 }).default("0"),
+  e1xpPoints: integer("e1xp_points").default(0),
+  pointsBadges: jsonb("points_badges").$type<string[]>().default([]),
+  referralCode: text("referral_code").unique(),
+  referredBy: varchar("referred_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -54,16 +58,18 @@ export const coins = pgTable("coins", {
   name: text("name").notNull(),
   symbol: text("symbol").notNull(),
   address: text("address"),
-  creator_wallet: text("creator_wallet").notNull(),
+  userId: varchar("user_id").references(() => users.id),
+  creatorWallet: text("creator_wallet").notNull(),
   status: text("status").notNull().default("pending"),
-  scraped_content_id: varchar("scraped_content_id").references(() => scrapedContent.id),
-  ipfs_uri: text("ipfs_uri"),
+  scrapedContentId: varchar("scraped_content_id").references(() => scrapedContent.id),
   ipfsUri: text("ipfs_uri"),
-  chain_id: text("chain_id"),
-  registry_tx_hash: text("registry_tx_hash"),
-  metadata_hash: text("metadata_hash"),
-  registered_at: timestamp("registered_at"),
+  chainId: text("chain_id"),
+  registryTxHash: text("registry_tx_hash"),
+  metadataHash: text("metadata_hash"),
+  registeredAt: timestamp("registered_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  image: text("image"),
+  description: text("description"),
 });
 
 // Transactions table - trading history
@@ -144,8 +150,30 @@ export const bookmarks = pgTable("bookmarks", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// E1XP Points Transactions
+export const pointsTransactions = pgTable("points_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  amount: integer("amount").notNull(),
+  type: text("type").notNull(), // 'daily_streak' | 'trade' | 'create_coin' | 'referral' | 'badge_unlock'
+  description: text("description").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// OG Meta Share Tracking
+export const shareTracking = pgTable("share_tracking", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  shareType: text("share_type").notNull(), // 'profile' | 'coin' | 'project' | 'referral' | 'badge'
+  resourceId: text("resource_id"),
+  platform: text("platform"), // 'twitter' | 'telegram' | 'facebook' | 'copy_link'
+  views: integer("views").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ many, one }) => ({
   projects: many(projects),
   coins: many(coins),
   sentMessages: many(messages, { relationName: "sentMessages" }),
@@ -153,6 +181,12 @@ export const usersRelations = relations(users, ({ many }) => ({
   connections: many(connections),
   groupMemberships: many(groupMemberships),
   loginStreak: many(loginStreaks),
+  pointsTransactions: many(pointsTransactions),
+  shareTracking: many(shareTracking),
+  referrer: one(users, {
+    fields: [users.referredBy],
+    references: [users.id],
+  }),
 }));
 
 export const projectsRelations = relations(projects, ({ one }) => ({
@@ -300,6 +334,12 @@ export type InsertLoginStreak = z.infer<typeof insertLoginStreakSchema>;
 
 export type Bookmark = typeof bookmarks.$inferSelect;
 
+export type PointsTransaction = typeof pointsTransactions.$inferSelect;
+export type InsertPointsTransaction = typeof pointsTransactions.$inferInsert;
+
+export type ShareTracking = typeof shareTracking.$inferSelect;
+export type InsertShareTracking = typeof shareTracking.$inferInsert;
+
 // Scraped Content table - imported content from URLs
 export const scrapedContent = pgTable("scraped_content", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -314,25 +354,6 @@ export const scrapedContent = pgTable("scraped_content", {
   tags: jsonb("tags").$type<string[]>(),
   metadata: jsonb("metadata").$type<Record<string, any>>(),
   scrapedAt: timestamp("scraped_at").defaultNow().notNull(),
-});
-
-// Enhanced Coins table for creator tokens
-export const coins = pgTable("coins", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  symbol: text("symbol").notNull(),
-  address: text("address"),
-  creatorWallet: text("creator_wallet").notNull(),
-  status: text("status").notNull().default("pending"),
-  scrapedContentId: varchar("scraped_content_id").references(() => scrapedContent.id),
-  ipfsUri: text("ipfs_uri"),
-  chainId: text("chain_id"),
-  registryTxHash: text("registry_tx_hash"),
-  metadataHash: text("metadata_hash"),
-  registeredAt: timestamp("registered_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  image: text("image"),
-  description: text("description"),
 });
 
 // Rewards table for tracking creator earnings
@@ -404,11 +425,6 @@ export const insertScrapedContentSchema = createInsertSchema(scrapedContent).omi
   scrapedAt: true,
 });
 
-export const insertCoinSchema = createInsertSchema(coins).omit({
-  id: true,
-  createdAt: true,
-});
-
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
   id: true,
   createdAt: true,
@@ -422,6 +438,5 @@ export const insertCreatorSchema = createInsertSchema(creators).omit({
 });
 
 export type InsertScrapedContent = z.infer<typeof insertScrapedContentSchema>;
-export type InsertCoin = z.infer<typeof insertCoinSchema>;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type InsertCreator = z.infer<typeof insertCreatorSchema>;

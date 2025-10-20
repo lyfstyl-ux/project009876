@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, MapPin, Settings, Share2, Grid3x3, List, MessageCircle, UserPlus, UserCheck } from "lucide-react";
+import { Edit, MapPin, Settings, Share2, Grid3x3, List, MessageCircle, UserPlus, Trophy, Sparkles, Award } from "lucide-react";
 import type { User, Project } from "@shared/schema";
+import { ShareModal } from "@/components/share-modal";
 
 export default function Profile() {
   const { id } = useParams<{ id?: string }>();
@@ -22,11 +23,23 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState("projects");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [editData, setEditData] = useState({
     displayName: "",
     bio: "",
     location: "",
   });
+
+  const BADGE_INFO: Record<string, { name: string; icon: string; color: string }> = {
+    newcomer: { name: "Newcomer", icon: "🌱", color: "bg-green-500" },
+    explorer: { name: "Explorer", icon: "🔍", color: "bg-blue-500" },
+    trader: { name: "Trader", icon: "💎", color: "bg-purple-500" },
+    creator: { name: "Creator", icon: "🎨", color: "bg-pink-500" },
+    influencer: { name: "Influencer", icon: "⭐", color: "bg-yellow-500" },
+    legend: { name: "Legend", icon: "👑", color: "bg-amber-500" },
+    streak_master: { name: "Streak Master", icon: "🔥", color: "bg-orange-500" },
+    referral_king: { name: "Referral King", icon: "🤝", color: "bg-indigo-500" },
+  };
 
   // Determine if viewing own profile
   const isOwnProfile = !id || (privyUser?.wallet?.address && id === privyUser.wallet.address);
@@ -157,7 +170,11 @@ export default function Profile() {
                   </Button>
                 </div>
               )}
-              <Button variant="ghost" size="icon" onClick={handleShare}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsShareModalOpen(true)}
+              >
                 <Share2 className="h-4 w-4" />
               </Button>
             </div>
@@ -174,6 +191,53 @@ export default function Profile() {
                 <span className="font-bold">{user.totalProfileViews || 0}</span> views
               </div>
             </div>
+
+            {/* E1XP Points */}
+            <Card className="p-4 bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-primary/20">
+                    <Trophy className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-primary">
+                      {user.e1xpPoints?.toLocaleString() || 0}
+                    </div>
+                    <div className="text-xs text-muted-foreground">E1XP Points</div>
+                  </div>
+                </div>
+                {user.pointsBadges && user.pointsBadges.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="gap-2"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Brag
+                  </Button>
+                )}
+              </div>
+            </Card>
+
+            {/* Badges */}
+            {user.pointsBadges && user.pointsBadges.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {user.pointsBadges.map((badge) => {
+                  const info = BADGE_INFO[badge];
+                  if (!info) return null;
+                  return (
+                    <Badge
+                      key={badge}
+                      className={`${info.color} text-white gap-1`}
+                    >
+                      <span>{info.icon}</span>
+                      <span>{info.name}</span>
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Bio */}
             <div className="space-y-2">
@@ -331,6 +395,15 @@ export default function Profile() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Share Modal */}
+      <ShareModal
+        open={isShareModalOpen}
+        onOpenChange={setIsShareModalOpen}
+        type="profile"
+        resourceId={profileUserId || ""}
+        title={`${user.displayName || user.username}'s Profile`}
+      />
     </div>
   );
 }
