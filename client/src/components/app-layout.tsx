@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Search, PlusCircle, User, TrendingUp, Coins, Compass } from "lucide-react";
@@ -48,11 +47,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { emoji: "⚡", label: "Admin", path: "/admin" },
   ];
 
+  const resourceItems = [
+    { emoji: "📖", label: "Docs", path: "/docs", testId: "nav-docs" },
+    { emoji: "❓", label: "FAQ", path: "/faq", testId: "nav-faq" },
+  ];
+
   return (
     <SidebarProvider>
       <div className="flex w-full h-screen">
         {/* Desktop Sidebar */}
-        <Sidebar className="hidden md:flex">
+        <Sidebar className="hidden md:flex w-64">
           <SidebarHeader className="border-b border-sidebar-border">
             <Link href="/" className="flex items-center px-2 py-1">
               <h1 className="text-xl font-bold tracking-tight group-data-[collapsible=icon]:hidden">
@@ -101,9 +105,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       const isActive = location === item.path;
                       return (
                         <SidebarMenuItem key={item.path}>
-                          <SidebarMenuButton 
-                            asChild 
-                            isActive={isActive} 
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isActive}
                             tooltip={item.label}
                             className="w-full justify-start"
                           >
@@ -115,6 +119,32 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         </SidebarMenuItem>
                       );
                     })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel className="px-2">Resources</SidebarGroupLabel>
+              <SidebarGroupContent className="px-2">
+                <SidebarMenu>
+                  {resourceItems.map((item) => {
+                    const isActive = location === item.path;
+                    return (
+                      <SidebarMenuItem key={item.path}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive}
+                          tooltip={item.label}
+                          className="w-full justify-start"
+                        >
+                          <Link href={item.path} className="flex items-center gap-3">
+                            <span className="text-xl shrink-0">{item.emoji}</span>
+                            <span className="flex-1">{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -153,7 +183,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     data-testid="header-search"
                   />
                 </div>
-                
+
                 {/* Stats Display */}
                 <div className="hidden lg:flex items-center gap-3 text-xs">
                   <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/30 border border-border/50">
