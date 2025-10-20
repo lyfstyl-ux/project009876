@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
@@ -7,12 +6,120 @@ import { createAvatar } from "@dicebear/core";
 import { avataaars } from "@dicebear/collection";
 import { usePrivy } from "@privy-io/react-auth";
 
+// Define a type for creator to include mock data fields
+type Creator = User & {
+  // Add any other properties specific to mock creators if needed
+};
+
 export default function Creators() {
   const { user: privyUser } = usePrivy();
   const [selectedTab, setSelectedTab] = useState<"top" | "rising" | "new">("top");
 
-  const { data: creators = [], isLoading } = useQuery<User[]>({
+  // Mock creators data for now
+  const mockCreators: Creator[] = [
+    {
+      id: "0x1234567890123456789012345678901234567890",
+      address: "0x1234567890123456789012345678901234567890",
+      username: "sarahjohnson",
+      displayName: "Sarah Johnson",
+      bio: "Digital artist & NFT creator",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=sarah",
+      createdAt: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000).toISOString(),
+      totalConnections: 1200,
+      totalProfileViews: 5000,
+      e1xpPoints: 15000,
+    },
+    {
+      id: "0x2345678901234567890123456789012345678901",
+      address: "0x2345678901234567890123456789012345678901",
+      username: "alexchen",
+      displayName: "Alex Chen",
+      bio: "Music producer & creator",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=alex",
+      createdAt: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(),
+      totalConnections: 950,
+      totalProfileViews: 3000,
+      e1xpPoints: 10000,
+    },
+    {
+      id: "0x3456789012345678901234567890123456789012",
+      address: "0x3456789012345678901234567890123456789012",
+      username: "mayapatel",
+      displayName: "Maya Patel",
+      bio: "Tech educator & builder",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=maya",
+      createdAt: new Date(Date.now() - 150 * 24 * 60 * 60 * 1000).toISOString(),
+      totalConnections: 1500,
+      totalProfileViews: 6000,
+      e1xpPoints: 20000,
+    },
+    {
+      id: "0x4567890123456789012345678901234567890123",
+      address: "0x4567890123456789012345678901234567890123",
+      username: "jordansmith",
+      displayName: "Jordan Smith",
+      bio: "Content creator & streamer",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=jordan",
+      createdAt: new Date(Date.now() - 100 * 24 * 60 * 60 * 1000).toISOString(),
+      totalConnections: 800,
+      totalProfileViews: 4000,
+      e1xpPoints: 9000,
+    },
+    {
+      id: "0x5678901234567890123456789012345678901234",
+      address: "0x5678901234567890123456789012345678901234",
+      username: "emmawilson",
+      displayName: "Emma Wilson",
+      bio: "Fashion designer & artist",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=emma",
+      createdAt: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000).toISOString(),
+      totalConnections: 1100,
+      totalProfileViews: 4500,
+      e1xpPoints: 12000,
+    },
+    {
+      id: "0x6789012345678901234567890123456789012345",
+      address: "0x6789012345678901234567890123456789012345",
+      username: "chrismartinez",
+      displayName: "Chris Martinez",
+      bio: "Photographer & visual artist",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=chris",
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      totalConnections: 700,
+      totalProfileViews: 2500,
+      e1xpPoints: 8000,
+    },
+    {
+      id: "0x7890123456789012345678901234567890123456",
+      address: "0x7890123456789012345678901234567890123456",
+      username: "priyakumar",
+      displayName: "Priya Kumar",
+      bio: "Writer & storyteller",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=priya",
+      createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+      totalConnections: 900,
+      totalProfileViews: 3500,
+      e1xpPoints: 11000,
+    },
+    {
+      id: "0x8901234567890123456789012345678901234567",
+      address: "0x8901234567890123456789012345678901234567",
+      username: "tylerbrown",
+      displayName: "Tyler Brown",
+      bio: "Game developer & designer",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=tyler",
+      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      totalConnections: 1300,
+      totalProfileViews: 5500,
+      e1xpPoints: 16000,
+    },
+  ];
+
+  const { data: creators = mockCreators, isLoading: creatorsLoading } = useQuery<
+    Creator[]
+  >({
     queryKey: ["/api/creators"],
+    initialData: mockCreators,
   });
 
   const enrichedCreators = creators.map((creator) => {
@@ -156,7 +263,7 @@ export default function Creators() {
         </button>
       </div>
 
-      {isLoading ? (
+      {creatorsLoading ? (
         <div className="space-y-4">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="bg-card rounded-xl p-4 sm:p-6">

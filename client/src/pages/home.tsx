@@ -52,8 +52,93 @@ type Coin = {
 };
 
 export default function Home() {
-  const { data: trendingCreators, isLoading } = useQuery<User[]>({
+  // Mock creators for stories section
+  const mockTrendingCreators: User[] = [
+    {
+      id: "0x1234567890123456789012345678901234567890",
+      username: "sarah_j",
+      displayName: "Sarah Johnson",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=sarah",
+      bio: "Digital artist & NFT creator",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "0x2345678901234567890123456789012345678901",
+      username: "alex_c",
+      displayName: "Alex Chen",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=alex",
+      bio: "Music producer & creator",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "0x3456789012345678901234567890123456789012",
+      username: "maya_p",
+      displayName: "Maya Patel",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=maya",
+      bio: "Tech educator & builder",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "0x4567890123456789012345678901234567890123",
+      username: "jordan_s",
+      displayName: "Jordan Smith",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=jordan",
+      bio: "Content creator & streamer",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "0x5678901234567890123456789012345678901234",
+      username: "emma_w",
+      displayName: "Emma Wilson",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=emma",
+      bio: "Fashion designer & artist",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "0x6789012345678901234567890123456789012345",
+      username: "chris_m",
+      displayName: "Chris Martinez",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=chris",
+      bio: "Photographer & visual artist",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "0x7890123456789012345678901234567890123456",
+      username: "priya_k",
+      displayName: "Priya Kumar",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=priya",
+      bio: "Writer & storyteller",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "0x8901234567890123456789012345678901234567",
+      username: "tyler_b",
+      displayName: "Tyler Brown",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=tyler",
+      bio: "Game developer & designer",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "0x9012345678901234567890123456789012345678",
+      username: "sophia_l",
+      displayName: "Sophia Lee",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=sophia",
+      bio: "Fitness coach & influencer",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "0xa123456789012345678901234567890123456789",
+      username: "ryan_d",
+      displayName: "Ryan Davis",
+      avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=ryan",
+      bio: "Video editor & filmmaker",
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  const { data: trendingCreators = mockTrendingCreators, isLoading } = useQuery<User[]>({
     queryKey: ["/api/creators/trending"],
+    initialData: mockTrendingCreators,
   });
 
   const { data: featuredProjects, isLoading: loadingProjects } = useQuery({
