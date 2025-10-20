@@ -19,7 +19,7 @@ import { createAvatar } from '@dicebear/core';
 import { avataaars } from '@dicebear/collection';
 import { formatSmartCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import CoinCard from "@/components/coin-card";
+import { CoinCard } from "@/components/coin-card";
 
 export default function PublicProfile() {
   const [, params] = useRoute("/profile/:identifier");
