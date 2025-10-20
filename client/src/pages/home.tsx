@@ -41,6 +41,8 @@ export default function Home() {
       volume24h: "15,250",
       holders: 342,
       creator: "sarah_artist",
+      category: "Art",
+      platform: "instagram",
       createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
@@ -53,6 +55,8 @@ export default function Home() {
       volume24h: "8,920",
       holders: 215,
       creator: "dj_beats",
+      category: "Music",
+      platform: "spotify",
       createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
@@ -65,6 +69,8 @@ export default function Home() {
       volume24h: "32,100",
       holders: 589,
       creator: "pro_gamer",
+      category: "Gaming",
+      platform: "youtube",
       createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
@@ -77,6 +83,8 @@ export default function Home() {
       volume24h: "21,450",
       holders: 412,
       creator: "dev_master",
+      category: "Tech",
+      platform: "github",
       createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
@@ -89,6 +97,8 @@ export default function Home() {
       volume24h: "18,670",
       holders: 367,
       creator: "style_icon",
+      category: "Fashion",
+      platform: "tiktok",
       createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
@@ -101,6 +111,8 @@ export default function Home() {
       volume24h: "11,230",
       holders: 278,
       creator: "fit_coach",
+      category: "Fitness",
+      platform: "youtube",
       createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     },
   ];
@@ -185,7 +197,7 @@ export default function Home() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
           {mockCoins.map((coin) => (
             <CoinCard key={coin.id} coin={coin} />
           ))}

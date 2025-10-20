@@ -19,6 +19,8 @@ interface CoinCardProps {
     holders?: number;
     creator?: string;
     createdAt?: string;
+    category?: string;
+    platform?: string;
   };
   className?: string;
   onClick?: () => void;
@@ -37,7 +39,7 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
     >
       {/* Coin Image */}
       <div className="relative w-full aspect-square bg-gradient-to-br from-muted/20 to-muted/10 overflow-hidden">
-        <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 rounded px-1.5 py-0.5 z-10">
+        <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5 rounded px-1.5 py-0.5 z-10">
           <span className="text-[8px] text-muted-foreground font-medium">
             {coin.createdAt
               ? new Date(coin.createdAt).toLocaleDateString("en-US", {
@@ -50,6 +52,14 @@ export function CoinCard({ coin, className, onClick }: CoinCardProps) {
                 })}
           </span>
         </div>
+
+        {coin.category && (
+          <div className="absolute top-1.5 right-1.5 z-10">
+            <Badge variant="secondary" className="text-[8px] px-1.5 py-0.5 h-auto font-medium">
+              {coin.category}
+            </Badge>
+          </div>
+        )}
 
         {coin.image && !imageError ? (
           <img
