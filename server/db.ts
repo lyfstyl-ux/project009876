@@ -8,13 +8,30 @@ import * as schema from "@shared/schema";
 // Use override: false to preserve Replit's environment variables
 config({ override: false });
 
-// Get DATABASE_URL from environment (provided by Replit)
-const databaseUrl = process.env.DATABASE_URL;
+// Check if DATABASE_URL points to an inaccessible external database
+// If so, use Replit's local database connection details instead
+let databaseUrl = process.env.DATABASE_URL;
 
-if (!databaseUrl) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+const isExternalBrokenDb = databaseUrl && (
+  databaseUrl.includes('supabase.co') || 
+  databaseUrl.includes('neon.tech')
+);
+
+// If DATABASE_URL points to external service, try using Replit's PG* env vars instead
+if (isExternalBrokenDb || !databaseUrl) {
+  const { PGHOST, PGPORT, PGUSER, PGDATABASE } = process.env;
+  
+  if (PGHOST && PGDATABASE) {
+    // Construct connection string from Replit's PostgreSQL environment variables
+    const port = PGPORT || '5432';
+    const user = PGUSER || 'postgres';
+    databaseUrl = `postgresql://${user}@${PGHOST}:${port}/${PGDATABASE}`;
+    console.log('Using Replit PostgreSQL database');
+  } else if (!databaseUrl) {
+    throw new Error(
+      "DATABASE_URL must be set. Did you forget to provision a database?",
+    );
+  }
 }
 
 // Determine if we need SSL based on the connection string
