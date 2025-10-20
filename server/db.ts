@@ -19,14 +19,18 @@ const isExternalBrokenDb = databaseUrl && (
 
 // If DATABASE_URL points to external service, try using Replit's PG* env vars instead
 if (isExternalBrokenDb || !databaseUrl) {
-  const { PGHOST, PGPORT, PGUSER, PGDATABASE } = process.env;
+  const { PGHOST, PGPORT, PGUSER, PGDATABASE, PGPASSWORD } = process.env;
   
   if (PGHOST && PGDATABASE) {
     // Construct connection string from Replit's PostgreSQL environment variables
     const port = PGPORT || '5432';
     const user = PGUSER || 'postgres';
-    databaseUrl = `postgresql://${user}@${PGHOST}:${port}/${PGDATABASE}`;
-    console.log('Using Replit PostgreSQL database');
+    const password = PGPASSWORD || '';
+    
+    // Include password in connection string if available
+    const auth = password ? `${user}:${password}` : user;
+    databaseUrl = `postgresql://${auth}@${PGHOST}:${port}/${PGDATABASE}`;
+    console.log('✓ Using Replit PostgreSQL database:', `${user}@${PGHOST}/${PGDATABASE}`);
   } else if (!databaseUrl) {
     throw new Error(
       "DATABASE_URL must be set. Did you forget to provision a database?",

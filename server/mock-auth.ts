@@ -46,3 +46,7 @@ export function getMockCurrentUserId(): string {
 export function setMockCurrentUserId(userId: string) {
   mockCurrentUserId = userId;
 }
+
+// Alias exports for compatibility
+export const getCurrentUserId = getMockCurrentUserId;
+export const setCurrentUserId = setMockCurrentUserId;
