@@ -1,11 +1,12 @@
 
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Search, PlusCircle, MessageCircle, User, Users, Zap, TrendingUp } from "lucide-react";
+import { Home, Search, PlusCircle, MessageCircle, User, Users, Zap, TrendingUp, Coins, TrendingUp as TrendingUpIcon } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { NotificationBell } from "./notification-bell";
 import { UserMenu } from "./user-menu";
 import { Input } from "@/components/ui/input";
+import { useQuery } from "@tanstack/react-query";
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +24,10 @@ import {
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+
+  const { data: stats } = useQuery({
+    queryKey: ["/api/admin/stats"],
+  });
 
   const navItems = [
     { icon: Home, label: "Feed", path: "/", testId: "nav-feed" },
@@ -122,8 +127,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Desktop Search Bar */}
-              <div className="hidden md:flex flex-1 max-w-md">
-                <div className="relative w-full">
+              <div className="hidden md:flex flex-1 max-w-2xl items-center gap-3">
+                <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="search"
@@ -138,6 +143,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     className="pl-9 h-9 text-sm bg-muted/50"
                     data-testid="header-search"
                   />
+                </div>
+                
+                {/* Stats Display */}
+                <div className="hidden lg:flex items-center gap-3 text-xs">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/30 border border-border/50">
+                    <Coins className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-muted-foreground">Coins:</span>
+                    <span className="font-semibold text-foreground">{stats?.totalCoins || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/30 border border-border/50">
+                    <TrendingUpIcon className="h-3.5 w-3.5 text-green-500" />
+                    <span className="text-muted-foreground">MC:</span>
+                    <span className="font-semibold text-foreground">$0</span>
+                  </div>
                 </div>
               </div>
 
