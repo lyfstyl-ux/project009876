@@ -742,6 +742,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get admin stats
+  app.get("/api/admin/stats", async (req, res) => {
+    try {
+      const coins = await storage.getAllCoins();
+      const creators = await storage.getAllCreators();
+      const rewards = await storage.getAllRewards();
+
+      // Calculate total coins
+      const totalCoins = coins.length;
+
+      // Calculate total volume from all creator trading activity
+      const totalVolume = creators.reduce((sum, creator) => {
+        const volume = parseFloat(creator.totalVolume || '0');
+        return sum + volume;
+      }, 0);
+
+      // Market cap calculation
+      // Note: Accurate market cap requires fetching live (price × circulating supply) 
+      // for each coin from Zora API. For now, using totalVolume as an approximation
+      // since volume represents actual value transacted on the platform.
+      // Future enhancement: integrate per-coin market cap aggregation from Zora SDK
+      const totalMarketCap = totalVolume;
+
+      // Calculate total earnings from rewards
+      const totalEarnings = rewards.reduce((sum, reward) => {
+        const amount = parseFloat(reward.rewardAmount || '0') / 1e18;
+        return sum + amount;
+      }, 0);
+
+      // Calculate platform fees and trade fees
+      // Platform fees use type 'platform', trade fees use type 'trade'
+      const platformFees = rewards
+        .filter(r => r.type === 'platform')
+        .reduce((sum, reward) => {
+          const amount = parseFloat(reward.rewardAmount || '0') / 1e18;
+          return sum + amount;
+        }, 0);
+
+      const tradeFees = rewards
+        .filter(r => r.type === 'trade')
+        .reduce((sum, reward) => {
+          const amount = parseFloat(reward.rewardAmount || '0') / 1e18;
+          return sum + amount;
+        }, 0);
+
+      res.json({
+        totalCoins,
+        totalMarketCap: totalMarketCap.toFixed(2),
+        totalVolume: totalVolume.toFixed(2),
+        totalEarnings: totalEarnings.toFixed(4),
+        platformFees: platformFees.toFixed(4),
+        tradeFees: tradeFees.toFixed(4),
+      });
+    } catch (error) {
+      console.error("Get admin stats error:", error);
+      res.status(500).json({ error: "Failed to fetch admin stats" });
+    }
+  });
+
   // Create or update creator
   app.post("/api/creators", async (req, res) => {
     try {
@@ -1917,37 +1976,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { type, title, message, address } = req.body;
 
+      // Validate required fields
+      if (!type || !title || !message) {
+        return res.status(400).json({ 
+          error: "Missing required fields: type, title, and message are required" 
+        });
+      }
+
+      let notificationCount = 0;
+
       if (address === "all") {
         // Send to all users
-        const creators = await storage.getAllCreators();
-        for (const creator of creators) {
+        try {
+          const creators = await storage.getAllCreators();
+          
+          for (const creator of creators) {
+            try {
+              await storage.createNotification({
+                userId: creator.address,
+                type: type,
+                title: title,
+                message: message,
+                read: false,
+              });
+              notificationCount++;
+
+              // Try to send Telegram notification, but don't fail if it errors
+              try {
+                await sendTelegramNotification(creator.address, title, message, type);
+              } catch (telegramError) {
+                console.error(`Telegram notification failed for ${creator.address}:`, telegramError);
+              }
+            } catch (notifError) {
+              console.error(`Failed to create notification for ${creator.address}:`, notifError);
+            }
+          }
+        } catch (dbError) {
+          console.error("Database error fetching creators:", dbError);
+          return res.status(500).json({ 
+            error: "Database connection failed. Please check your database configuration.",
+            details: dbError instanceof Error ? dbError.message : String(dbError)
+          });
+        }
+      } else if (address) {
+        // Send to specific user
+        try {
           await storage.createNotification({
-            userId: creator.address,
+            userId: address,
             type: type,
             title: title,
             message: message,
             read: false,
           });
+          notificationCount++;
 
-          await sendTelegramNotification(creator.address, title, message, type);
+          // Try to send Telegram notification, but don't fail if it errors
+          try {
+            await sendTelegramNotification(address, title, message, type);
+          } catch (telegramError) {
+            console.error(`Telegram notification failed for ${address}:`, telegramError);
+          }
+        } catch (dbError) {
+          console.error("Database error creating notification:", dbError);
+          return res.status(500).json({ 
+            error: "Database connection failed. Please check your database configuration.",
+            details: dbError instanceof Error ? dbError.message : String(dbError)
+          });
         }
-      } else if (address) {
-        // Send to specific user
-        await storage.createNotification({
-          userId: address,
-          type: type,
-          title: title,
-          message: message,
-          read: false,
+      } else {
+        return res.status(400).json({ 
+          error: "Missing address field. Provide a specific address or 'all' to send to all users." 
         });
-
-        await sendTelegramNotification(address, title, message, type);
       }
 
-      res.json({ success: true, message: "Test notification sent" });
+      res.json({ 
+        success: true, 
+        message: `Test notification sent successfully to ${notificationCount} user(s)` 
+      });
     } catch (error) {
       console.error("Send test notification error:", error);
-      res.status(500).json({ error: "Failed to send test notification" });
+      res.status(500).json({ 
+        error: "Failed to send test notification",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
