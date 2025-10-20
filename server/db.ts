@@ -1,3 +1,4 @@
+
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
@@ -6,16 +7,19 @@ import * as schema from "@shared/schema";
 const databaseUrl = process.env.DATABASE_URL || process.env.REPLIT_DB_URL;
 
 if (!databaseUrl) {
-  console.error("DATABASE_URL not found. Please provision a PostgreSQL database in Replit.");
-  console.error("Go to the Tools panel and add PostgreSQL to your Repl.");
+  console.error("DATABASE_URL not found. Please set it in the Secrets tool.");
+  console.error("For Supabase, use the connection string from your project settings.");
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?",
   );
 }
 
-// PostgreSQL connection with pooling
+// Supabase PostgreSQL connection with pooling
 export const pool = new Pool({ 
   connectionString: databaseUrl,
+  ssl: {
+    rejectUnauthorized: false
+  },
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
