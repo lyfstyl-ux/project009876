@@ -475,4 +475,4 @@ export const insertCreatorSchema = createInsertSchema(creators).omit({
 
 export type InsertScrapedContent = z.infer<typeof insertScrapedContentSchema>;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
-export type InsertCreator = z.infer<typeof insertCreatorSchema>;
+export type InsertCreator = z.infer<typeof insertCreatorSchema>;export const insertCommentSchema = { /* schema definition */ };
