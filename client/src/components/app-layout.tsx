@@ -67,11 +67,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { emoji: "❓", label: "FAQ", path: "/faq", testId: "nav-faq" },
   ];
 
+  const isAdminRoute = typeof location === 'string' && (location === '/admin' || location.startsWith('/admin/'));
+
   return (
     <SidebarProvider>
       <div className="flex w-full h-screen">
-        {/* Desktop Sidebar */}
-        <Sidebar className="hidden md:flex" collapsible="icon">
+        {/* Desktop Sidebar (hidden on admin routes) */}
+        {!isAdminRoute && (
+          <Sidebar className="hidden md:flex" collapsible="icon">
           <SidebarHeader className="border-b border-sidebar-border h-16 flex items-center px-4">
             <Link href="/" className="flex items-center">
               <h1 className="text-lg font-bold tracking-tight group-data-[collapsible=icon]:hidden">
@@ -164,12 +167,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
-        </Sidebar>
+          </Sidebar>
+        )}
 
         {/* Main Content Area */}
         <SidebarInset className="flex flex-col w-full">
-          {/* Top Navigation - Desktop */}
-          <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          {/* Top Navigation - Desktop (hidden on admin routes) */}
+          {!isAdminRoute && (
+            <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
             <div className="flex h-16 items-center justify-between px-4 max-w-5xl mx-auto w-full gap-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="hidden md:flex" />
@@ -229,8 +234,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <UserMenu />
                 </div>
               </div>
-            </div>
-          </header>
+              </div>
+            </header>
+          )}
 
           {/* Main Content */}
           <main className="flex-1 overflow-auto pb-16 md:pb-0">
@@ -239,8 +245,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </main>
 
-          {/* Mobile Bottom Navigation */}
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+          {/* Mobile Bottom Navigation (hidden on admin routes) */}
+          {!isAdminRoute && (
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
             <div className="flex items-center justify-around h-14">
               {navItems
                 .filter(item => !item.requireAuth || authenticated)
@@ -266,7 +273,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   );
                 })}
             </div>
-          </nav>
+            </nav>
+          )}
         </SidebarInset>
       </div>
     </SidebarProvider>

@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+// Use the Supabase-backed storage implementation which includes notifications, push subscriptions, and moderation
+import { storage } from "./supabase-storage";
+import { createAdminRouter } from "./routes/admin";
 import {
   insertScrapedContentSchema,
   insertCoinSchema,
@@ -248,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const coin = await storage.createCoin(validatedData);
 
       // Auto-create or update creator (only if creator address exists)
-      const creatorAddress = validatedData.creator_wallet;
+  const creatorAddress = validatedData.creatorWallet;
       if (!creatorAddress) {
         return res.status(400).json({ error: "Creator address is required" });
       }
@@ -346,10 +348,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (
         validatedData.status === "active" &&
         validatedData.address &&
-        coin.creator_wallet
+  coin.creatorWallet
       ) {
         await storage.createNotification({
-          userId: coin.creator_wallet,
+          userId: coin.creatorWallet,
           type: "coin_created",
           title: "🚀 Coin Deployed Successfully!",
           message: `Your coin "${coin.name}" (${coin.symbol}) is now live on the blockchain! Address: ${validatedData.address}`,
@@ -360,7 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Also send Telegram notification
         await sendTelegramNotification(
-          coin.creator_wallet,
+          coin.creatorWallet,
           "🪙 Coin Deployed Successfully!",
           `Your coin "${coin.name}" (${coin.symbol}) is now live on the blockchain!\n\nAddress: ${validatedData.address}\n\n🚀 Start trading now!`,
           "coin_created",
@@ -433,9 +435,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const coin of coins) {
         try {
           // Only broadcast coins that have addresses (deployed coins)
-          if (coin.address && coin.creator_wallet) {
+          if (coin.address && coin.creatorWallet) {
             await sendTelegramNotification(
-              coin.creator_wallet,
+              coin.creatorWallet,
               "Coin Created",
               "",
               "coin_created",
@@ -1585,6 +1587,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to save push subscription" });
     }
   });
+
+  // Register admin router (provides /api/admin/* endpoints)
+  try {
+    const adminRouter = createAdminRouter(storage as any);
+    app.use('/api/admin', adminRouter);
+  } catch (err) {
+    console.warn('Failed to register admin router:', err);
+  }
 
   // Get login streak for a user
   app.get("/api/login-streak/:address", async (req, res) => {

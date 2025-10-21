@@ -1,14 +1,19 @@
-// ensure .env is loaded in development so process.env.DATABASE_URL is available
+// ensure environment files are loaded. Load base .env first, then
+// allow .env.development to override when running in development.
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load the appropriate .env file based on NODE_ENV
-const envFile = process.env.NODE_ENV === 'development' ? '.env.development' : '.env';
-dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+// Always load base .env if present so users can keep DATABASE_URL there.
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-// Database URL should come from Replit Secrets, not .env files
+// If running in development, also load (and allow) .env.development to override values.
+if (process.env.NODE_ENV === 'development') {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.development'), override: true });
+}
+
+// Database URL should come from Replit Secrets or local .env files.
 if (!process.env.DATABASE_URL) {
-  console.error('DATABASE_URL not found. Make sure Replit PostgreSQL database is provisioned.');
+  console.error('DATABASE_URL not found. Make sure Replit PostgreSQL database is provisioned or set DATABASE_URL in .env/.env.development.');
 }
 
 import express, { type Request, Response, NextFunction } from "express";

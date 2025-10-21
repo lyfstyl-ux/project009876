@@ -143,6 +143,7 @@ export class SupabaseStorage {
     if (update.activityTrackerTxHash !== undefined) updateData.activity_tracker_tx_hash = update.activityTrackerTxHash;
     if (update.activityTrackerRecordedAt !== undefined) updateData.activity_tracker_recorded_at = update.activityTrackerRecordedAt;
     if (update.createdAt !== undefined) updateData.created_at = update.createdAt;
+  if ((update as any).hidden !== undefined) updateData.hidden = (update as any).hidden;
 
     const { data, error } = await supabase
       .from('coins')
@@ -371,29 +372,38 @@ export class SupabaseStorage {
 
   // Points System Methods
   async addPoints(creatorId: string, amount: number, reason: string): Promise<void> {
-    const creator = await this.getCreator(creatorId);
+    // Accept either a creator id or a wallet address
+    let creator = await this.getCreator(creatorId);
+    if (!creator) {
+      // Try looking up by address
+      creator = await this.getCreatorByAddress(creatorId);
+    }
+
     if (!creator) throw new Error('Creator not found');
 
     const currentPoints = parseInt(creator.points || '0');
     const newPoints = currentPoints + amount;
 
-    await this.updateCreator(creatorId, { points: newPoints.toString() });
+    await this.updateCreator(creator.id, { points: newPoints.toString() });
   }
 
   async awardPoints(creatorId: string, amount: number, reason: string, type: NotificationType): Promise<void> {
+    // Add points (supports wallet address or creator id)
     await this.addPoints(creatorId, amount, reason);
-    
-    const creator = await this.getCreator(creatorId);
+
+    // Resolve creator record (after points update)
+    let creator = await this.getCreator(creatorId);
+    if (!creator) creator = await this.getCreatorByAddress(creatorId);
     if (!creator) return;
 
     const newPoints = parseInt(creator.points || '0');
 
     // Use notification service
     const { notificationService } = await import('./notification-service');
-    await notificationService.notifyE1XPEarned(creatorId, amount, reason);
+    await notificationService.notifyE1XPEarned(creator.address, amount, reason);
 
     await this.createNotification({
-      creator_id: creatorId,
+      creator_id: creator.id,
       type,
       title: '⚡ E1XP Points Earned!',
       message: `You earned ${amount} E1XP points for ${reason}`,
@@ -401,7 +411,7 @@ export class SupabaseStorage {
         points: amount,
         reason,
         totalPoints: newPoints,
-        shareText: `I just earned ${amount} E1XP points on @Every1Fun for ${reason}! Total: ${newPoints} ⚡\n\nJoin me: https://every1.fun/profile/${creatorId}\n\n#Every1Fun #E1XP #Web3`
+        shareText: `I just earned ${amount} E1XP points on @Every1Fun for ${reason}! Total: ${newPoints} ⚡\n\nJoin me: https://every1.fun/profile/${creator.address}\n\n#Every1Fun #E1XP #Web3`
       },
       read: false
     });
@@ -496,28 +506,74 @@ export class SupabaseStorage {
   }
 
   // Notification Methods
-  async createNotification(notification: {
-    creator_id: string;
-    type: NotificationType;
-    title: string;
-    message: string;
-    metadata?: NotificationMetadata;
-    read: boolean;
-  }): Promise<void> {
+  // Flexible createNotification: accepts payloads with either creator_id, userId, user_id or combinations.
+  async createNotification(notification: any): Promise<void> {
+    // Normalize creator and user ids
+    const creator_id = notification.creator_id || notification.creatorId || notification.userId || notification.user_id || null;
+    const user_id = notification.user_id || notification.userId || null;
+
+    // Build metadata: start with provided metadata then copy common top-level fields into it
+    const metadata: NotificationMetadata = { ...(notification.metadata || {}) };
+    if (notification.amount !== undefined) metadata.points = notification.amount;
+    if (notification.coinAddress) metadata.coinAddress = notification.coinAddress;
+    if (notification.coinSymbol) metadata.coinSymbol = notification.coinSymbol;
+    if (notification.transactionHash) metadata.transactionHash = notification.transactionHash;
+    if (notification.reason) metadata.reason = notification.reason;
+
+    const payload: any = {
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      metadata,
+      read: notification.read || false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    if (creator_id) payload.creator_id = creator_id;
+    if (user_id) payload.user_id = user_id;
+
     const { error } = await supabase
       .from('notifications')
-      .insert({
-        creator_id: notification.creator_id,
-        type: notification.type,
-        title: notification.title,
-        message: notification.message,
-        metadata: notification.metadata || {},
-        read: notification.read,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
+      .insert(payload);
 
     if (error) throw error;
+
+    // After persisting, attempt to send push notifications for user_id or creator_id
+    try {
+      const target = payload.user_id || payload.creator_id;
+      if (target) {
+        const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY;
+        const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
+        if (VAPID_PUBLIC && VAPID_PRIVATE) {
+          try {
+            // dynamic import to avoid compile-time type issues if web-push types are missing
+            const webpush = await import('web-push');
+            webpush.setVapidDetails('mailto:admin@example.com', VAPID_PUBLIC, VAPID_PRIVATE);
+            const subs = await this.getPushSubscriptionsByUser(target);
+            const payloadBody = JSON.stringify({
+              title: notification.title,
+              message: notification.message,
+              metadata: payload.metadata || {},
+              type: payload.type,
+            });
+
+            for (const s of subs) {
+              try {
+                const subscription = JSON.parse(s.subscription);
+                await webpush.sendNotification(subscription, payloadBody);
+              } catch (err) {
+                console.error('Failed to send web-push to subscription:', err);
+              }
+            }
+          } catch (err) {
+            console.error('Web-push dynamic import or send failed:', err);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error while sending push notifications:', err);
+    }
   }
 
   async getUserNotifications(creatorId: string): Promise<UserNotification[]> {

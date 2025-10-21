@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, DollarSign, TrendingUp, Users, Coins, Activity, BarChart3, BellRing, Settings, Wallet, EyeOff, Eye } from "lucide-react";
+import { Loader2, DollarSign, TrendingUp, Users, Coins, Activity, BarChart3, BellRing, Settings, Wallet, EyeOff, Eye, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,13 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { NotificationTestingPanel } from "@/components/notification-testing-panel";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 const PLATFORM_FEE_ADDRESS = "0xf25af781c4F1Df40Ac1D06e6B80c17815AD311F7";
 
@@ -29,6 +36,7 @@ export default function Admin() {
   const [notifTitle, setNotifTitle] = useState("");
   const [notifMessage, setNotifMessage] = useState("");
   const [targetAddress, setTargetAddress] = useState("");
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const { data: stats, isLoading: isLoadingStats } = useQuery<any>({
     queryKey: ["/api/admin/stats"],
@@ -140,27 +148,53 @@ export default function Admin() {
 
   return (
     <div className="flex flex-col md:flex-row h-full">
-      {/* Mobile tabs */}
-      <div className="md:hidden border-b border-border/40 bg-muted/10 p-2 overflow-x-auto">
-        <div className="flex gap-1 min-w-max">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap",
-                activeTab === item.id
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover-elevate active-elevate-2"
-              )}
-              data-testid={`button-tab-${item.id}`}
-            >
-              <item.icon className="w-4 h-4" />
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
+          {/* Mobile: drawer trigger + header */}
+          <div className="md:hidden border-b border-border/40 bg-muted/10 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h1 className="text-lg font-bold text-foreground">Admin</h1>
+                <div className="text-xs text-muted-foreground">Live Dashboard</div>
+              </div>
+              <div>
+                {/* Use existing Sheet (drawer) UI for mobile menu */}
+                <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" aria-label="Open menu">
+                      <Menu className="w-5 h-5" />
+                    </Button>
+                  </SheetTrigger>
+
+                  <SheetContent side="left" className="w-64 p-4">
+                    <SheetHeader>
+                      <SheetTitle>Menu</SheetTitle>
+                    </SheetHeader>
+
+                    <div className="mt-4 space-y-2">
+                      {menuItems.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setActiveTab(item.id);
+                            setMobileOpen(false);
+                          }}
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-left",
+                            activeTab === item.id
+                              ? "bg-primary text-primary-foreground shadow"
+                              : "text-muted-foreground hover-elevate active-elevate-2"
+                          )}
+                          data-testid={`button-tab-${item.id}`}
+                        >
+                          <item.icon className="w-5 h-5" />
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </div>
+          </div>
 
       {/* Desktop sidebar */}
       <div className="hidden md:block w-64 border-r border-border/40 bg-muted/10 p-4 space-y-2">
@@ -373,7 +407,28 @@ export default function Admin() {
                               </p>
                             </div>
                           </div>
-                          <Badge variant="secondary">{user.creatorType || 'User'}</Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">{user.creatorType || 'User'}</Badge>
+                            <Button size="sm" variant="ghost" onClick={async () => {
+                              try {
+                                await apiRequest('POST', `/api/admin/hide-creator/${user.address}`, {});
+                                toast({ title: 'Creator Hidden', description: `${user.username || user.address} has been hidden` });
+                                queryClient.invalidateQueries({ queryKey: ['/api/creators'] });
+                              } catch (err: any) {
+                                toast({ title: 'Failed', description: err.message || String(err), variant: 'destructive' });
+                              }
+                            }}>Hide</Button>
+                            <Button size="sm" variant="destructive" onClick={async () => {
+                              if (!confirm(`Remove creator ${user.username || user.address}? This will ban their account.`)) return;
+                              try {
+                                await apiRequest('POST', `/api/admin/remove-creator/${user.address}`, {});
+                                toast({ title: 'Creator Removed', description: `${user.username || user.address} has been removed` });
+                                queryClient.invalidateQueries({ queryKey: ['/api/creators'] });
+                              } catch (err: any) {
+                                toast({ title: 'Failed', description: err.message || String(err), variant: 'destructive' });
+                              }
+                            }}>Remove</Button>
+                          </div>
                         </div>
                       ))
                     )}
@@ -440,6 +495,83 @@ export default function Admin() {
                     )}
                   </div>
                 </ScrollArea>
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium mb-2">Create Coin (Admin)</h3>
+                  <div className="grid sm:grid-cols-3 gap-2">
+                    <Input placeholder="Name" id="admin-coin-name" />
+                    <Input placeholder="Symbol" id="admin-coin-symbol" />
+                    <Input placeholder="Creator Address (optional)" id="admin-coin-creator" />
+                  </div>
+                  <Button
+                    className="mt-2"
+                    onClick={async () => {
+                      const name = (document.getElementById('admin-coin-name') as HTMLInputElement).value;
+                      const symbol = (document.getElementById('admin-coin-symbol') as HTMLInputElement).value;
+                      const creator = (document.getElementById('admin-coin-creator') as HTMLInputElement).value;
+                      if (!name || !symbol) {
+                        toast({ title: 'Missing fields', description: 'Name and symbol required', variant: 'destructive' });
+                        return;
+                      }
+                      try {
+                        await apiRequest('POST', '/api/admin/create-coin', { name, symbol, creatorAddress: creator });
+                        toast({ title: 'Coin created', description: 'Coin created successfully' });
+                        queryClient.invalidateQueries({ queryKey: ['/api/coins'] });
+                      } catch (err: any) {
+                        toast({ title: 'Create failed', description: err.message || String(err), variant: 'destructive' });
+                      }
+                    }}
+                  >Create Coin</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === 'notifications' && (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Admin Gifts</CardTitle>
+                <CardDescription>Send E1XP gifts to users</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-2">
+                  <div className="flex items-center gap-2">
+                    <Input id="gift-recipients" placeholder="Recipient address or comma-separated list" />
+                    <label className="flex items-center gap-2 text-sm">
+                      <input id="gift-all" type="checkbox" className="rounded" />
+                      <span>Send to all users</span>
+                    </label>
+                  </div>
+                  <Input id="gift-amount" placeholder="Amount" />
+                  <Textarea id="gift-reason" placeholder="Reason (optional)" rows={2} />
+                  <Button onClick={async () => {
+                    const recipientsRaw = (document.getElementById('gift-recipients') as HTMLInputElement).value;
+                    const amount = (document.getElementById('gift-amount') as HTMLInputElement).value;
+                    const reason = (document.getElementById('gift-reason') as HTMLTextAreaElement).value;
+                    const sendAll = (document.getElementById('gift-all') as HTMLInputElement).checked;
+                    if (!sendAll && !recipientsRaw && recipientsRaw !== 'all') {
+                      toast({ title: 'Missing fields', description: 'Recipients or "Send to all" required', variant: 'destructive' });
+                      return;
+                    }
+                    if (!amount) {
+                      toast({ title: 'Missing fields', description: 'Amount required', variant: 'destructive' });
+                      return;
+                    }
+
+                    const payload: any = { amount, reason };
+                    if (sendAll) payload.all = true;
+                    else if (recipientsRaw.trim().toLowerCase() === 'all') payload.all = true;
+                    else payload.recipients = recipientsRaw.split(',').map(s => s.trim()).filter(Boolean);
+
+                    try {
+                      await apiRequest('POST', '/api/admin/gift-e1xp', payload);
+                      toast({ title: 'Gifts sent', description: sendAll ? 'Sent to all users' : `Sent to ${payload.recipients.length} recipients` });
+                    } catch (err: any) {
+                      toast({ title: 'Send failed', description: err.message || String(err), variant: 'destructive' });
+                    }
+                  }}>Send Gift</Button>
+                </div>
               </CardContent>
             </Card>
           </div>
